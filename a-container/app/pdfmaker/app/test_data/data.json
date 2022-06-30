@@ -1,0 +1,312 @@
+{
+    "style":{
+        "sm_r":{
+            "name": "Normal",
+            "alignment":    2,
+            "fontName":     "IPAexGothic",
+            "fontSize":     11
+        },
+
+        "sm_l":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     11
+        },
+        "sm_c":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     11
+        },
+
+        "sm_l_b":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     12
+        },
+        "md_l_b":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     15
+        },
+        "big_center":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     20,
+            "underlineWidth":   0.5,
+            "underlineGap":     0,
+            "underlineOffset": -5.0,
+            "strikeWidth":   0.5,
+            "strikeGap" : 0,
+            "strikeOffset" : -3.0,
+            "leading":2
+        },
+        "client":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     18,
+            "underlineWidth":   1,
+            "underlineGap":     1,
+            "underlineOffset": -3.0,
+            "textColor": "#000000"
+        }  
+    },
+    "defPdf":{
+        "attr":{
+            "name": "def_invoice",
+            "name_jp":"請求書",
+            "page_size": "A4",
+            "page_type": "portrait",
+            "top_mergin": 15,
+            "footter_size": 50
+        },
+        "file":{
+            "outDir": "./static/pdf", 
+            "file_name": "test.pdf"
+        },
+        "header":{
+            "title": ["EP","data['hdata']['category']","big_center"],
+            "title_after": ["E","Spacer(0,15*mm)"],
+            "table_infos":[
+                {
+                    "table":[
+                        [ ["EP" ,"data['hdata']['clientName']","client"],["EP" ,"'請求番号:'+data['hdata']['invoiceNo']","sm_r"]],
+                        ["",""],
+                        ["",["EP","data['hdata']['myCompanyName']","md_l_b"] ],
+                        ["",""],
+                        ["", ["EP","'鹿沼店:'+data['hdata']['myAddress1']","sm_r"]],
+                        ["", ["EP","'TEL: '+ data['hdata']['myTel1']","sm_r"]],
+                        ["", ["EP","'FAX: ' + data['hdata']['myFax1']","sm_r"]],
+                        ["", ["EP","'千渡店:'+ data['hdata']['myAddress2']","sm_r"]],
+                        ["", ["EP","'TEL: '+ data['hdata']['myTel2']","sm_r"]],
+                        ["", ["EP" ,"'担当者: '+ data['hdata']['person']","sm_l"]]
+                    ],
+                    "col_widths": ["E","[110*mm, 70*mm]"],
+                    "table_style":[
+                        ["NOP","('GRID',(0,0),(-1,-1),0.15,colors.black)"],
+                        ["E","('SPAN',(0,7),(0,8))"]
+                    ],
+                    "after": ["E","Spacer(10*mm,5*mm)"]
+                }
+            ],
+            "drawImages":[
+                ["('./logo2.jpg', 495,675,50,50,mask='auto')"]
+            ]
+        },
+        "body":{
+            "detail":{
+                "row_max": 15,
+                "label_style" : "sm_c",
+                "fields":[
+                    {  "key": "num"         ,"label": "No." ,  "width": 20 , "p_style":"sm_r","eval":"_ROWNUM+1" },
+                    {  "key": "productName" ,"label": "商品名", "width": 90, "p_style":"sm_l" },
+                    {  "key": "quantity"    ,"label": "数量",   "width": 15 , "p_style":"sm_r", "format": "{:,}" },
+                    {  "key": "unitPrice"   ,"label": "単価",   "width": 25 , "p_style":"sm_r", "format": "{:,}" },
+                    {  "key": "price"       ,"label": "金額",   "width": 25 , "p_style":"sm_r", "format": "{:,}" }
+                ],
+                "styles":[
+                    ["E","('FONT', (0, 0), (-1, -1), 'IPAexGothic', 11)"],
+                    ["E","('GRID', (0, 0), (-1,-1), 0.25, colors.black)"],
+                    ["E","('ALIGN', (0, 0), (-1, 0), 'CENTER')"],
+                    ["E","('BACKGROUND', (0, 0), (6, 0), colors.lightgrey)"]
+                ],
+                "stripe_backcrounds":["colors.lightblue","colors.white"]
+            },
+            "detail_after":{
+                "table_info":{
+                    "table":[
+                        ["",["EPF","data['sum']['amountLabel']","sm_l","{:}"], ["EPF","data['sum']['amount']", "sm_r","{:,}"]],
+                        ["",["EPF","data['sum']['taxLabel']","sm_l","{:}"], ["EPF","data['sum']['tax']","sm_r","{:,}" ]],
+                        ["",["EPF","data['sum']['totalLabel']","sm_l","{:}"] ,["EPF","data['sum']['total']","sm_r","{:,}" ]]
+                    ],
+                    "col_widths":["E","(60*mm, 75*mm, 40*mm)"],
+                    "table_style":[
+                        ["E","('LINEBEFORE', (0, 0), (0, -1), 0.15, colors.black)"],
+                        ["E","('LINEABOVE', (0, 0), (-1, -1), 0.15, colors.black)"],
+                        ["E","('LINEBELOW', (0, 0), (-1, -1), 0.15, colors.black)"],
+                        ["E","('GRID',(2,0),(-1,-1),0.15,colors.black)"]
+                    ]    
+                }
+            }    
+
+        },
+        "footer":{
+            "pos_xy": ["E","(15*mm,10*mm)"],
+            "table_infos":[
+                {
+                    "table":[
+                        ["摘要", "", "", ""],
+                        [["EP","data['hdata']['memo']","sm_l"],"", "", ""]
+                    ],
+                    "col_widths": ["E","(110*mm,10*mm,30*mm,30*mm)"],
+                    "row_heights": ["E","(8*mm,30*mm)"],
+                    "table_style":[
+                        ["E","('FONT', (0, 0), (-1, -1), 'IPAexGothic', 11)"],
+                        ["E","('GRID', (0, 0), (0,1), 0.25, colors.black)"],
+                        ["E","('GRID', (2, 0), (3,2), 0.25, colors.black)"],
+                        ["E","('VALIGN',(0,1),(0,-1),'TOP')"],
+                        ["E","('ALIGN',(0,0),(0,-1),'CENTER')"]
+                    ]
+                }
+            ],
+            "drawImages":[
+                ["('./inkan.png', 400,50,50,50,mask='auto')"],
+                ["('./inkan.png', 490,50,50,50,mask='auto')"]
+            ]
+        }    
+    },
+    "data": {
+        "hdata": {
+                "hid": 691,
+                "invoiceNo": "20210822001",
+                "clientName": "テスト商店",
+                "clientClass": "法人",
+                "category": "請求書",
+                "dueDate": "2021-08-22",
+                "person": "小野",
+                "memo": "とりあえずメモ",
+                "tax": "税込",
+                "myCompanyName": "株式会社 テストコム",
+                "myAddress1": "栃木県鹿沼市板荷000-99",
+                "myTel1": "000-999-1111",
+                "myFax1": "000-888-2222",
+                "myAddress2": "栃木県鹿沼市千渡000-99",
+                "myTel2": "000-999-7777"
+        },
+        "sum": {
+            "amountLabel": "小計(税込み)",
+            "amount": 53000,
+            "taxLabel": "うち消費税",
+            "tax": 5300,
+            "totalLabel": "合計金額",
+            "total": 58300
+        },
+        "bdata": [
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            },
+            {
+                "itemNum": 1, "productName": "草刈機",
+                "quantity": 1,  "unitPrice": 50000, "price": 50000
+            }
+        ]
+    }
+}

@@ -1,0 +1,73 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .sm-mode {
+                display: none;
+            }
+
+            .pc-mode {
+                display: block;
+            }
+
+            @media screen and (max-width:690px) {
+                .sm-mode {
+                    display: block;
+                }
+
+                .pc-mode {
+                    display: none;
+                }
+            }
+
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <setting-header :mode-name="modeName"></setting-header>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="削除済みページ選択"
+                            header-border-variant="light">
+                            <p>削除した請求書・見積書を参照できます。</p>
+                            <p>参照したい削除済みページを選択してください。</p>
+                            <b-button class="mt-5" href="/invoice-dust-page">削除済み請求書ページへ</b-button>
+                            <b-button class="mt-5" href="/quotation-dust-page">削除済み見積書ページへ</b-button>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            });
+
+            var app = new Vue({
+                el: '#app',
+                methods: {
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = '削除済みページ選択';
+                },
+                router,
+                computed: {
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+        </script>
+        <% endblock %>

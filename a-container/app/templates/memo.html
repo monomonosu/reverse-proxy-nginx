@@ -1,0 +1,376 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #memotable td {
+                vertical-align: middle;
+            }
+        </style>
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- 空行 -->
+                <b-row class="mb-3"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col></b-col>
+                            <b-col class="text-right">
+                                <sc-menu class="mb-3" v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                        <b-card border-variant="white" class="mb-3 text-center" header="メモ一覧"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-row>
+                                        <b-col>
+                                            <b-input-group>
+                                                <b-form-input v-model="searchMemoWord" id="searchMemoWord" size="sm"
+                                                    placeholder="🔍　作成日 or 担当者">
+                                                </b-form-input>
+                                                <b-input-group-append>
+                                                    <b-button variant="primary" size="sm" @click="searchMemo">検索
+                                                    </b-button>
+                                                </b-input-group-append>
+                                            </b-input-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                                <div class="ml-5"></div>
+                                <b-col sm>
+                                </b-col>
+                                <b-col sm>
+                                    <b-row align-h="end">
+                                        <b-form-checkbox class="mr-3" v-model="isShowFavorite">お気に入り</b-form-checkbox>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row align-h="end">
+                                <p class="mr-3">表示件数 {{ memosIndicateCount }}件</p>
+                            </b-row>
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="MemoAddRow();">＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <b-table responsive hover small id="memotable" sort-by="ID" small label="Table Options"
+                                :items=memosIndicateIndex :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'createdAt', label: '作成日', thClass: 'text-center', tdClass: 'text-center' },
+                          {  key: 'title', label: '件名', thClass: 'text-center', },
+                          {  key: 'manager', label: '担当者', thClass: 'text-center', },
+                          {  key: 'content', label: '内容', thClass: 'text-center', },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectMemo(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                                <template v-slot:cell(createdAt)="data">
+                                    {{formatDate(data.item.createdAt)}}
+                                </template>
+                                <template v-slot:cell(content)="data">
+                                    {{formatContent(data.item.content)}}
+                                </template>
+                            </b-table>
+                            <b-row align-h="end">
+                                <b-button v-if="isMore" variant="primary" size="sm" @click="showMore">さらに表示</b-button>
+                            </b-row>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(memo.createdAt)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(memo.updatedAt)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="メモ入力"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="3" label-cols-sm="2" label-cols-lg="1" content-cols
+                                        content-cols-sm content-cols-lg label-size="sm" label="件名" label-for="title"
+                                        label-align="right">
+                                        <b-form-input v-model="memo.title" id="title" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="3" label-cols-sm="2" label-cols-lg="1" content-cols
+                                        content-cols-sm content-cols-lg label-size="sm" label="担当者" label-for="manager"
+                                        label-align="right">
+                                        <b-form-input v-model="memo.manager" id="manager" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="3" label-cols-sm="2" label-cols-lg="1" content-cols
+                                        content-cols-sm content-cols-lg label-size="sm" label="お気に入り"
+                                        label-for="isFavorite" label-align="right">
+                                        <div v-if="memo.isFavorite===true">
+                                            <a href="#" style="text-decoration: none;color:#fed11d;padding: 0 7px 0 0;"
+                                                @click="changeIsFavorite(memo.isFavorite);">
+                                                <b-icon icon="star-fill"></b-icon>
+                                            </a>
+                                        </div>
+                                        <div v-else>
+                                            <a href="#" style="text-decoration: none;color:#000000;padding: 0 7px 0 0;"
+                                                @click="changeIsFavorite(memo.isFavorite);">
+                                                <b-icon icon="star"></b-icon>
+                                            </a>
+                                        </div>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="3" label-cols-sm="2" label-cols-lg="1" content-cols
+                                        content-cols-sm content-cols-lg label-size="sm" label="内容" label-for="content"
+                                        label-align="right">
+                                        <b-form-textarea v-model="memo.content" size="sm" rows="10" max-rows="20">
+                                        </b-form-textarea>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <router-link to="?page=index">
+                            <b-button @click="getMemos();" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                        </router-link>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="bulkUpsert(memo);showConfirmModal();">保存
+                        </b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(memo,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    searchMemoWord: '',     //メモ検索
+                    memosIndicateCount: 0,  //メモ検索
+                    memos: [],               //全件memo
+                    memo: [],                //選択中のmemo
+                    isShowFavorite: false,
+                    title: '',              //モーダルタイトル
+                    message: '',            //モーダルメッセージ
+                    offset: 0,
+                    isMore: false,
+                },
+                methods: {
+                    // ---Memos---
+                    getMemos: async function (searchWord = '', offset = 0) {
+                        self = this;
+                        url = '/v1/memos'
+                        await axios.get(url, {
+                            params: {
+                                search: searchWord,
+                                offset: offset,
+                                moreCheck: true,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                if (offset == 0) {
+                                    self.offset = 0;
+                                    self.memos = response.data.memos;
+                                    self.isMore = response.data.isMore;
+                                }
+                                else {
+                                    response.data.memos.map(memo => self.memos.push(memo));
+                                    self.isMore = response.data.isMore;
+                                }
+                            });
+                    },
+                    bulkUpsert(item) {
+                        if (!item.id) {
+                            this.insertMemo(item);
+                        }
+                        else {
+                            this.updateMemo(item);
+                        }
+                    },
+                    insertMemo: async function (item) {
+                        self = this;
+                        await axios.post("/v1/memo", item)
+                            .then(function (response) {
+                                Vue.set(self.memo, 'id', response.data.id)
+                                self.memo.isInsert = false;
+                                self.getMemo(self.memo);
+                                localStorage.setItem('memo', JSON.stringify(self.memo));
+                                app.title = '新規作成';
+                                app.message = '保存しました。';
+                            });
+                    },
+                    updateMemo: async function (item) {
+                        self = this;
+                        await axios.put("/v1/memo/" + item.id, item)
+                            .then(function (response) {
+                                console.log(response);
+                                self.getMemo(self.memo);
+                                localStorage.setItem('memo', JSON.stringify(self.memo));
+                                app.title = '更新';
+                                app.message = '保存しました。';
+                            });
+                    },
+                    deleteMemo: async function (item) {
+                        self = this;
+                        await axios.delete("/v1/memo/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.memo = '';
+                                self.getMemos(self.searchMemoWord);
+                            });
+                    },
+                    MemoAddRow: function () {
+                        self = this;
+                        self.memos.push({
+                            isInsert: true,
+                        });
+                        self.memo = self.memos.slice(-1)[0];
+                        localStorage.setItem('memo', JSON.stringify(self.memo))
+                    },
+                    selectMemo: function (item) {
+                        this.memo = item;
+                        console.log(this.memo);
+                        localStorage.setItem('memo', JSON.stringify(item))
+                    },
+                    getMemo: async function (item) {
+                        self = this;
+                        await axios.get("/v1/memo/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.memo, key, value);
+                                }
+                            });
+                    },
+                    searchMemo: function () {
+                        this.getMemos(this.searchMemoWord);
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    showMore: function () {
+                        this.offset += 100;
+                        this.getMemos(this.searchMemoWord, this.offset)
+                    },
+                    modalShow: function (item, modalName) {
+                        this.memo = item;
+                        console.log(this.memo);
+                        this.$bvModal.show(modalName);
+                    },
+                    showConfirmModal: function () {
+                        this.$bvModal.show('confirmModal');
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteMemo(this.memo);
+                        }
+                    },
+                    changeIsFavorite(value) {
+                        if (value === true)
+                            this.$set(this.memo, 'isFavorite', false);
+                        else
+                            this.$set(this.memo, 'isFavorite', true);
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                    formatContent(data) {
+                        if (data && data.length > 20) return data.substr(0, 20) + '...';
+                        return data;
+                    }
+                },
+                mounted: function () {
+                    if (localStorage.getItem('memo'))
+                        this.memo = JSON.parse(localStorage.getItem('memo'));
+                    this.getMemos();
+                    document.querySelector('title').textContent = 'メモ管理';
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                    memosIndicateIndex: function () {
+                        let memos = this.memos;
+                        if (this.isShowFavorite === true)
+                            memos = memos.filter(memo => memo.isFavorite === true);
+                        this.memosIndicateCount = memos.length;
+                        return memos;
+                    },
+                }
+            })
+
+        </script>
+        <% endblock %>

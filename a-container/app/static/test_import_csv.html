@@ -1,0 +1,104 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--
+        <link href="images/favicon.ico" rel="shortcut icon">
+        -->
+    <title>CSV→JSONテスト</title>
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+    <!-- Load fontawesome -->
+    <!-- link href="./css/all.css" rel="stylesheet" -->
+    <!--load all styles -->
+    <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+    <link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+        crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+
+    <!-- VueRouter -->
+    <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <template>
+            <div>
+                <input type="file" @change="loadCsvFile" />
+                <p>{{ message }}</p>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                message: "",
+            },
+            methods: {
+                loadCsvFile(e) {
+                    let self = this;
+                    self.message = "";
+                    let file = e.target.files[0];
+
+                    if (!file.type.match("application/vnd.ms-excel")) {
+                        self.message = "CSVファイルを選択してください";
+                        return;
+                    }
+
+                    let reader = new FileReader();
+                    reader.readAsText(file);
+
+                    reader.onload = () => {
+                        console.log(reader.result);
+                        let lines = reader.result.split("\r\n");
+                        var jsonArray = csv2json(lines);
+                        console.log(jsonArray);
+                    };
+                }
+            }
+        })
+        function csv2json(csvArray) {
+            var jsonArray = [];
+            var items = csvArray[0].split(',');
+            for (var i = 1; i < csvArray.length; i++) {
+                var a_line = new Object();
+                // カンマで区切られた各データに分割する
+                var csvArrayD = csvArray[i].split(',');
+                //// 各データをループ処理する
+                for (var j = 0; j < items.length; j++) {
+                    // 要素名：items[j]
+                    // データ：csvArrayD[j]
+                    a_line[items[j]] = csvArrayD[j];
+                }
+                jsonArray.push(a_line);
+            }
+            return jsonArray;
+        }
+
+
+    </script>
+</body>
+
+</html>

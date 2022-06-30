@@ -1,0 +1,145 @@
+{
+    "defPdf":{
+        "attr":{
+            "name": "def_invoice",
+            "name_jp":"領収書",
+            "page_size": "A5",
+            "page_type": "landscape",
+            "top_mergin": 10,
+            "footter_size": 0
+        },
+        "file":{
+            "outDir": "./static/pdf", 
+            "file_name": "test_n_table.pdf"
+        },
+        "header":{
+            "table_infos":[
+                {
+                    "table":[
+                        [["EP","data['hdata']['title']","big_center"],"","","","",""],
+                        [["EP","'入金先'","sm_l"],["EP","data['hdata']['clientName']","sm_l"],"","","",["P","No:","sm_l"]],
+                        ["",["EP","'1,234,567'","sm_l"],"","","",""],
+                        ["","",["EP","'但'+'PCサポート'","sm_l"],"","",""],
+                        ["","",["EP","'入金日'+'2020/02/24'","sm_l"],"","",""],
+                        ["","",["EP","'株式会社　Caddie'","sm_l"],"","",""],
+                        ["","","","","",""],
+                        ["","","","","",""],
+                        ["","","","","",""]
+                    ],
+                    "col_widths": ["E","[30*mm, 30*mm, 30*mm,30*mm,30*mm]"],
+                    "row_heights": ["E","(10*mm,20*mm,10*mm,10*mm,10*mm,10*mm,10*mm,10*mm,10*mm)"],
+                    "table_style":[
+                        ["E","('GRID',(0,0),(-1,-1),0.15,colors.black)"],
+                        ["E","('VALIGN',(0,0),(-1,-1),'TOP')"],
+                        ["E","('SPAN',(0,0),(5,0))"],
+                        ["E","('SPAN',(1,0),(4,0))"],
+                        ["E","('SPAN',(1,1),(4,1))"],
+                        ["E","('SPAN',(2,2),(5,2))"],
+                        ["E","('SPAN',(2,3),(5,3))"],
+                        ["E","('SPAN',(2,4),(5,6))"]
+                    ],
+                    "after": ["E","Spacer(10*mm,5*mm)"]
+                }
+            ],
+            "drawImages":[
+            ]
+        }
+    },
+    "data": {
+        "hdata": {
+                "title": "領収書",
+                "clientName": "株式会社 テスト会社様",
+                "dueDate": "2121/11/17",
+                "postNumber": "000-1111",
+                "address01": "栃木県鹿沼市板荷",
+                "address02": "111-111",
+                "makerName": "小野　哲",
+
+                "product": "草刈機",
+                "model": "ハウス",
+                "modelClass": "ダンボール",
+                "weight": 4000,
+                "taxClass": "8%",
+
+                "itemLabelA": "品名A",
+                "itemQtyA": 101,
+                "itemPriceA": 40000,
+                "itemLabelB": "品名B",
+                "itemQtyB": 100,
+                "itemPriceB": 50000,
+                "itemQtyC": 100,
+                "itemLabelC": "品名C",
+                "itemPriceC": 60000,
+                "itemLabelD": "品名D",
+                "itemQtyD": 100,
+                "itemPriceD": 70000,
+                "itemLabelE": "品名E",
+                "itemQtyE": 100,
+                "itemPriceE": 80000,
+                "itemLabelF": "品名F",
+                "itemQtyF": 100,
+                "itemPriceF": 90000,
+                "itemLabelG": "品名G",
+                "itemQtyG": 100,
+                "itemPriceG": 900000
+
+        }
+    },
+    "style":{
+        "sm_r":{
+            "name": "Normal",
+            "alignment":    2,
+            "fontName":     "IPAexGothic",
+            "fontSize":     9
+        },
+
+        "sm_l":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     9
+        },
+        "sm_c":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     9
+        },
+
+        "sm_l_b":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     9
+        },
+        "md_l_b":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     15
+        },
+        "big_center":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     20,
+            "underlineWidth":   0.5,
+            "underlineGap":     0,
+            "underlineOffset": -5.0,
+            "strikeWidth":   0.5,
+            "strikeGap" : 0,
+            "strikeOffset" : -3.0,
+            "leading":2
+        },
+        "client":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     18,
+            "underlineWidth":   1,
+            "underlineGap":     1,
+            "underlineOffset": -3.0,
+            "textColor": "#000000"
+        }  
+    }
+}

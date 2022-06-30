@@ -1,0 +1,151 @@
+{
+    "defPdf":{
+        "attr":{
+            "name": "def_invoice",
+            "name_jp":"領収書",
+            "page_size": "A5",
+            "page_type": "landscape",
+            "top_mergin": 10,
+            "footter_size": 0
+        },
+        "file":{
+            "outDir": "./static/pdf", 
+            "file_name": "test_n_table.pdf"
+        },
+        "header":{
+            "table_infos":[
+                {
+                    "table":[
+                        [["EP","data['hdata']['title']","big_center"],"","","","",""],
+                        [["EP","'入金先'","sm_l"],["EP","data['hdata']['clientName']","big_left"],"","","",["P","No:","sm_l"]],
+                        ["",["EPF","data['hdata']['amount']","big_price","￥{:,}-"],"","","",""],
+                        ["",["EP","'但'","sm_l"],["EP","'PCサポート'","md_l"],"","",""],
+                        ["",["EP","'入金日'","sm_l"],["EP","'2020/02/24'","md_l"],"","",""],
+                        ["","",["EP","'株式会社　Caddie<br/>栃木県鹿沼市板荷000-0000'","md_l"],"","",""],
+                        ["","","","","",""]
+                    ],
+                    "col_widths": ["E","[30*mm, 30*mm, 30*mm,30*mm,30*mm]"],
+                    "row_heights": ["E","(20*mm,20*mm,15*mm,10*mm,10*mm,10*mm,10*mm)"],
+                    "table_style":[
+                        ["NOP","('GRID',(0,0),(-1,-1),0.15,colors.black)"],
+                        ["E","('VALIGN',(0,0),(-1,-1),'TOP')"],
+                        ["E","('SPAN',(0,0),(5,0))"],
+                        ["E","('SPAN',(1,1),(4,1))"],
+                        ["E","('SPAN',(1,2),(4,2))"],
+                        ["E","('VALIGN',(1,2),(4,2),'TOP')"],
+                        ["E","('BACKGROUND',(1,2),(4,2),'#e0e0e0')"],
+                        ["E","('SPAN',(2,3),(5,3))"],
+                        ["E","('SPAN',(2,4),(5,4))"],
+                        ["E","('SPAN',(2,5),(5,6))"]
+                    ],
+                    "after": ["E","Spacer(10*mm,5*mm)"]
+                }
+            ],
+            "drawImages":[
+            ]
+        }
+    },
+    "data": {
+        "hdata": {
+                "title": "領収書",
+                "clientName": "株式会社 テスト会社様",
+                "amount": 123456,
+
+
+
+                "dueDate": "2121/11/17",
+                "postNumber": "000-1111",
+                "address01": "栃木県鹿沼市板荷",
+                "address02": "111-111",
+                "makerName": "小野　哲"
+        }
+
+    },
+    "style":{
+        "sm_r":{
+            "name": "Normal",
+            "alignment":    2,
+            "fontName":     "IPAexGothic",
+            "fontSize":     10
+        },
+
+        "sm_l":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     10
+        },
+        "sm_c":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     10
+        },
+
+        "sm_l_b":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     9
+        },
+        "md_l":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     15,
+            "strikeWidth":   0.5,
+            "strikeGap" : 2,
+            "strikeOffset" : 1.0,
+            "leading":20
+        },
+        "big_left":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     20,
+            "underlineWidth":   0.5,
+            "underlineGap":     0,
+            "underlineOffset": -5.0,
+            "strikeWidth":   0.5,
+            "strikeGap" : 0,
+            "strikeOffset" : -3.0,
+            "leading":2
+        },
+        "big_center":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     20,
+            "underlineWidth":   0.5,
+            "underlineGap":     0,
+            "underlineOffset": -5.0,
+            "strikeWidth":   0.5,
+            "strikeGap" : 0,
+            "strikeOffset" : -3.0,
+            "leading":2
+        },
+        "big_price":{
+            "name": "Normal",
+            "alignment":    1,
+            "fontName":     "IPAexGothic",
+            "fontSize":     20,
+            "underlineWidth":   1,
+            "underlineGap":     1,
+            "underlineOffset": -3.0,
+            "strikeWidth":   0.5,
+            "strikeGap" : 10,
+            "strikeOffset" : 0,
+            "leading":2
+        },
+        "client":{
+            "name": "Normal",
+            "alignment":    0,
+            "fontName":     "IPAexGothic",
+            "fontSize":     18,
+            "underlineWidth":   1,
+            "underlineGap":     1,
+            "underlineOffset": -3.0,
+            "textColor": "#000000"
+        }  
+    }
+}

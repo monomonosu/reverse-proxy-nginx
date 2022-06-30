@@ -1,0 +1,340 @@
+<% extends "head.html" %>
+  <% block content %>
+
+    <!-- jsPanel CSS -->
+    <link rel="stylesheet" href="../static/library/jspanel.css" type="text/css" />
+    <!-- jsPanel JavaScript -->
+    <script src="../static//library/jspanel.js"></script>
+
+    <!-- optional jsPanel extensions -->
+    <script src="../static//library/jspanel.modal.js"></script>
+    <script src="../static//library/jspanel.tooltip.js"></script>
+    <script src="../static//library/jspanel.hint.js"></script>
+    <script src="../static//library/jspanel.layout.js"></script>
+    <script src="../static//library/jspanel.contextmenu.js"></script>
+    <script src="../static//library/jspanel.dock.js"></script>
+
+    <style>
+      body {
+        background-color: #f7f7f7;
+      }
+
+      #logo {
+        width: 400;
+        position: fixed;
+        inset: 0;
+        margin: auto;
+      }
+    </style>
+
+    <div id="app">
+      <!--
+  <b-button size="lg" id="openMenu" @click="openMenu" class="mt-3 ml-3"><i class="fas fa-bars"></i></b-button>
+  -->
+      <b-img id="logo" src="../static/images/logo_a_color2.png"></b-img>
+      <b-row>
+        <b-col class="text-right">
+          <div v-if="menuVisible">
+            <sc-menu :visible="menuVisible" class="mt-3 mr-3"></sc-menu>
+          </div>
+        </b-col>
+      </b-row>
+    </div>
+
+    <script>
+      var app = new Vue({
+        el: '#app',
+        data: {
+          item: [],
+          menuVisible: false,
+
+        },
+        methods: {
+          openMenu: function () {
+            openMenu();
+          },
+        },
+        mounted: function () {
+          //if (localStorage.getItem('wMode')=='tb') {
+          //}
+          // タブレットメニュー表示
+          if (localStorage.getItem('wMode')) {
+            if (localStorage.getItem('wMode') == 'mw') {
+              this.menuVisible = false;
+            } else {
+              this.menuVisible = true;
+            }
+          } else {
+            this.menuVisible = false;
+          }
+        }
+      });
+
+    </script>
+
+    <script>
+
+      if (localStorage.getItem('wMode') === null) {
+        localStorage.setItem('wMode', modeCheck());
+      }
+
+      if (localStorage.getItem('isHideTabletMode') === null) {
+        localStorage.setItem('isHideTabletMode', 'false');
+      }
+
+      let _left = 40;
+      let _top = 20;
+      wins = {};
+
+      function openMenu(obj) {
+        self = obj;
+
+        if (modeName() == 'tb') {
+          return
+        }
+
+        jsPanel.create({
+          headerControls: 'closeOnly sm',
+          headerTitle: 'menu',
+          panelSize: '200 600',
+          contentSize: '300 600',
+          position: 'left-top 0 0',
+          contentOverflow: 'hidden',
+          content: '<div class="mt-2"><iframe src=/mw-menu width=100% height=100% frameborder="0"><iframe></div>',
+          dragit: {
+            containment: [0, -100, -100, -100]
+          },
+          resizeit: {
+            disable: true
+          },
+          onbeforeclose: function (panel) {
+            return confirm('ログアウトしますか？');
+          },
+          onclosed: function (panel) {
+            window.location.href = '/logout';
+          },
+          callback: function () {
+            $('iframe').on('load', function () {
+              $(this).contents().find('#check').on('click', function () {
+                openWindow('/check-page', 'チェック', 'check')
+              });
+              $(this).contents().find('#customer').on('click', function () {
+                openWindow('/customer-page', '得意先', 'customer')
+              });
+              $(this).contents().find('#item').on('click', function () {
+                openWindow('/item-page', '商品', 'item')
+              });
+              $(this).contents().find('#invoice').on('click', function () {
+                openWindow('/invoice-page', '請求書', 'invoice')
+              });
+              $(this).contents().find('#quotation').on('click', function () {
+                openWindow('/quotation-page', '見積書', 'quotation')
+              });
+              $(this).contents().find('#memo').on('click', function () {
+                openWindow('/memo-page', 'メモ', 'memo')
+              });
+              $(this).contents().find('#setting').on('click', function () {
+                openWindow('/setting-page', '設定', 'setting')
+              });
+              $(this).contents().find('#logout').on('click', function () {
+                window.location.href = '/logout';
+              });
+              $(this).contents().find('#tb-mode').on('click', function () {
+                localStorage.setItem('wMode', 'tb')
+                window.location.href = '/';
+              });
+              $(this).contents().find('#mw-mode').on('click', function () {
+                localStorage.setItem('wMode', 'mw')
+                window.location.href = '/';
+              });
+            });
+          },
+        });
+      }
+
+      function openWindow(url, title, name) {
+        if (modeName() !== 'mw') {
+          window.location.href = url;
+          return
+        }
+        if (wins[name]) {
+          if (wins[name] == "loading") return;
+          wins[name].front();
+          return;
+        }
+        wins[name] = "loading";
+
+        let panel = jsPanel.create({
+          headerControls: 'sm',
+          headerTitle: title,
+          data: {
+            title: title,
+            name: name
+          },
+          footerToolbar: '&nbsp;',
+          borderRadius: '.5rem',
+          contentOverflow: 'hidden hidden',
+          panelSize: {
+            width: '1220px',
+            height: '70vh'
+          },
+          position: {
+            my: 'center-top',
+            at: 'center-top',
+            //of: 'header',
+            //autoposition: 'down',
+            offsetX: _left,
+            offsetY: _top,
+            //maxTop: 200
+          },
+          dragit: {
+            containment: [0, -200, -100, -200]
+          },
+          onbeforeclose: function (panel) {
+            var con = panel.content.querySelector('iframe').contentWindow
+            if (typeof con.app.isDiffObject == 'function') {
+              if (con.app.isDiffObject()) {  //本体のオブジェクト比較関数を呼ぶ
+                return confirm('未保存のデータがありますが、保存せず終了しますか？');
+              }
+            }
+            return true;
+          },
+          onclosed: function (panel) {
+            delete wins[panel.options.data.name];
+          },
+          callback: function (panel) {
+            $('iframe').on('load', function () {
+              $(this).contents().on('click', function () {
+                panel.front();
+              });
+              wins[name] = panel;
+            });
+          },
+          content: '<iframe src=' + url + ' width="100%" height="100%" frameborder="0"><iframe>',
+        });
+        _left += 40;
+        _top += 40;
+        if (_left > 500) _left -= 400
+        if (_top > 300) _top -= 300
+
+      }
+
+      openMenu();
+
+      window.addEventListener('message', function (e) {
+        //if (event.origin !== "https://example.com") 
+        //  return;
+        console.log(event.origin)
+        //console.log(event.source)
+        if (e.data.action == 'pdfOut') {
+          console.log(e.data.message)
+          openPDF(e.data.message)
+        }
+      });
+
+      function openPDF(file) {
+        url = "pdf/" + file;
+        let panel = jsPanel.create({
+          headerControls: 'sm',
+          headerTitle: "PDF VIEWER",
+          footerToolbar: '&nbsp;',
+          borderRadius: '.5rem',
+          contentOverflow: 'hidden hidden',
+          panelSize: {
+            width: () => window.innerWidth * 0.3,
+            height: '100vh'
+          },
+          dragit: {
+            containment: [0, -200, -100, -200]
+          },
+          position: {
+            my: 'right-top',
+            at: 'right-top',
+            offsetX: _left,
+            offsetY: _top,
+            //maxTop: 200
+          },
+          callback: function () {
+            $('iframe').on('load', function () {
+              $(this).contents().on('click', function () {
+                panel.front();
+              });
+            });
+          },
+          content: '<iframe src=' + url + ' width=100% height=100%><iframe>',
+        });
+      }
+      /*
+      if(localStorage.getItem('wMode')=='mw'){
+        //  OSM map for test 
+          panel=jsPanel.create({
+          headerControls: 'sm',
+          headerTitle: "Client Map",
+          footerToolbar: '<span>footer</span>',
+          borderRadius: '.5rem',
+          contentOverflow: 'hidden hidden',
+          panelSize: {
+              width: 500,
+              height: 500
+          },
+          position: { 
+              my: 'left-top',
+              at: 'left-top',
+              offsetX: 250,
+              offsetY: 250,
+              //maxTop: 200
+          },
+          //callback: function(){
+          //  $('iframe').on('load',function(){
+          //    $(this).contents().on('click', function(){
+          //        panel.front();
+          //    });
+          //  });
+          //},  
+          content: `
+            <iframe src="/leaflet" width=100% height=100%></iframe>
+          `
+        });
+      
+       }
+      */
+
+
+      function modeCheck() {
+        var ua = navigator.userAgent;
+        if (ua.indexOf('iPhone') > 0 || ua.indexOf('iPod') > 0 || ua.indexOf('Android') > 0 && ua.indexOf('Mobile') > 0) {
+          return 'sm';
+        } else if (ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0) {
+          return 'tb';
+        } else {
+          return 'mw';
+        }
+      }
+
+      function modeName() {
+        return localStorage.getItem('wMode');
+      }
+
+      function polling_session() {
+        if (localStorage.getItem('wMode') !== 'mw') return 
+        url = "/is-session"
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", url, false);
+        xhr.send(null);
+        if (xhr.status == 200) {
+          response = JSON.parse(xhr.responseText);
+          console.log("mw session:",response.session)
+          if(!response.session){
+            window.location.href = '/login';
+          }
+        } else {
+          console.log("No session");
+        }
+
+      }
+      setInterval(polling_session, 30000)
+
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <% endblock %>

@@ -1,0 +1,62 @@
+<% extends "head.html" %>
+    <% block content %>
+        <div id="app" class="text-center">
+            <b-button class="mt-2" variant="primary" id="check" style="width: 80%;">
+                <b-icon icon="check"></b-icon> チェック
+            </b-button>
+            <b-button class="mt-1" variant="primary" id="customer" style="width: 80%;">
+                <i class="fas fa-building"></i>　得意先
+            </b-button>
+            <b-button class="mt-1" variant="primary" id="item" style="width: 80%;">
+                <i class="fas fa-box"></i>　商　品
+            </b-button>
+            <b-button class="mt-1" variant="primary" id="invoice" style="width: 80%;">
+                <i class="fas fa-copy"></i>　請求書
+            </b-button>
+            <b-button class="mt-1" variant="primary" id="quotation" style="width: 80%;">
+                <i class="far fa-copy"></i>　見積書
+            </b-button>
+            <b-button class="mt-1" variant="primary" id="memo" style="width: 80%;">
+                <i class="fas fa-book-open"></i>　メ　モ
+            </b-button>
+            <b-row class="mt-5"></b-row>
+            <b-row class="mt-5"></b-row>
+            <b-row class="mt-5"></b-row>
+            <b-row class="mt-5"></b-row>
+            <b-button id="setting" v-b-tooltip.hover.top="'各種設定'" style="width: 39%;">
+                <b-icon icon="gear-fill"></b-icon>
+            </b-button>
+            <b-button v-if="modeName=='mw' && isHideTabletModeValue=='false'" id="tb-mode"
+                v-b-tooltip.hover.top="'タブレットモード'" style="width: 39%;">
+                <b-img src="../static/images/icon/tablet.png"></b-img>
+            </b-button>
+            <b-button v-else-if="modeName=='tb'" id="mw-mode" v-b-tooltip.hover.topright="'マルチウィンドウモード'"
+                style="width: 39%;">
+                <b-icon icon="front"></b-icon>
+            </b-button>
+            <b-button class="mt-2" variant="outline-primary" id="logout" style="width: 80%;">
+                <b-img src="../static/images/icon/icon_logout.png"></b-img>　ログアウト
+            </b-button>
+        </div>
+
+        <script>
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    items: [],
+                },
+                methods: {
+                },
+                computed: {
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                    isHideTabletModeValue() {
+                        return localStorage.getItem('isHideTabletMode');
+                    },
+                }
+            })
+        </script>
+
+        <% endblock %>

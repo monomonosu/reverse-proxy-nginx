@@ -1,0 +1,8 @@
+/__pycache__
+/migrations
+/static/pdf
+*.db
+*.db-journal
+csv_dir/import/*
+csv_dir/export/*
+!.gitkeep

@@ -1,0 +1,278 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--
+        <link href="images/favicon.ico" rel="shortcut icon">
+        -->
+    <title>Test View</title>
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+    <!-- Load fontawesome -->
+    <!-- link href="./css/all.css" rel="stylesheet" -->
+    <!--load all styles -->
+    <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+    <link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+        crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    Viewレイヤのテスト<br>
+
+    <!-- 請求書（Invoice）View -->
+    <div id="appInvoices" class="mt-2">
+        <span class="mr-5 h2">Invoices</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'title', label: '件名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(title)="data">
+                <b-form-input v-model="data.item.title" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-button @click="getInvoiceItems(data.item)">登録商品取得</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>請求書番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.applyNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>日付:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.applyDate" type="date" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>請求書有効期限:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.expiry" type="date" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メモ:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.memo" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>備考:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.remarks" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>内税・外税:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isTaxExp" @change="data.item.isTaxExp">
+                                </b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>請求書_商品一覧</b></b-col>
+                        <b-col>
+                            {{ data.item.invoice_items }}
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 請求書＿商品（Invoice_Items）View -->
+    <div id="appInvoiceItems" class="mt-2">
+        <span class="mr-5 h2">Invoice_Items</span>
+        <!-- <b-button @click='getItems'>読み込み</b-button> -->
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="invoiceItems" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'price', label: '値段' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(price)="data">
+                <b-form-input v-model="data.item.price" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item);">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>個数:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.count" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+
+    <script>
+        var mixin = {
+            methods: {
+                getItems: async function () {
+                    self = this;
+                    url = self.baseUrlItems;
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.items = response.data;
+                        });
+                },
+                insertItem: async function (item) {
+                    self = this;
+                    url = self.baseUrlItem;
+                    await axios.post(url, item)
+                        .then(function (response) {
+                            console.log(response);
+                            self.getItems();
+                        });
+                },
+                updateItem: async function (item) {
+                    self = this;
+                    url = self.baseUrlItem + "/" + item.id;
+                    await axios.put(url, item)
+                        .then(function (response) {
+                            console.log(response);
+                            self.getItems();
+                        });
+                },
+                deleteItem: async function (item) {
+                    self = this;
+                    url = self.baseUrlItem + "/" + item.id;
+                    await axios.delete(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.getItems();
+                        });
+                },
+                addRow: function () {
+                    this.items.push({
+                        isInsert: true
+                    });
+                }
+            }
+        }
+
+
+        var appInvoices = new Vue({
+            el: '#appInvoices',
+            mixins: [mixin],
+            data: {
+                items: [],
+                // invoiceItems: [],
+                baseUrlItems: "/invoices",
+                baseUrlItem: "/invoice"
+            },
+            methods: {
+                getInvoiceItems: async function (item) {
+                    self = this;
+                    url = self.baseUrlItem + "/" + item.id;
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            appInvoiceItems.invoiceItems = response.data.invoice_items;
+                        });
+                }
+            }
+        })
+
+        var appInvoiceItems = new Vue({
+            el: '#appInvoiceItems',
+            mixins: [mixin],
+            data: {
+                items: [],
+                invoiceItems: [],               //ここに値が入ると自動的にテーブルに出力される
+                baseUrlItems: "/invoice_items",
+                baseUrlItem: "/invoice_item"
+            },
+            methods: {
+                updateInvoiceItem: async function (item) {
+                    self = this;
+                    url = self.baseUrlItem + "/" + item.id;
+                    await axios.put(url, item)
+                        .then(function (response) {
+                            console.log(response);
+                        });
+                },
+                addRow: function () {
+                    this.invoiceItems.push({
+                        isInsert: true
+                    });
+                }
+            }
+        })
+
+
+
+    </script>
+
+</body>
+
+</html>

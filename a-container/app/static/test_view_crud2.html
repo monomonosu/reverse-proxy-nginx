@@ -1,0 +1,914 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--
+        <link href="images/favicon.ico" rel="shortcut icon">
+        -->
+    <title>Test View</title>
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+    <!-- Load fontawesome -->
+    <!-- link href="./css/all.css" rel="stylesheet" -->
+    <!--load all styles -->
+    <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+    <link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+        crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    Viewレイヤのテスト<br>
+
+    <!-- ユーザー（User）View -->
+    <div id="appUsers" class="mt-2">
+        <span class="mr-5 h2">Users</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'name', label: 'ユーザー名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(name)="data">
+                <b-form-input v-model="data.item.name" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>名前:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.name" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>パスワード:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.password" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>グループ:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.group" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>権限:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.role" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 得意先（Customer）View -->
+    <div id="appCustomers" class="mt-2">
+        <span class="mr-5 h2">Customers</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'customerName', label: '得意先名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(customerName)="data">
+                <b-form-input v-model="data.item.customerName" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>敬称:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.honorificTitle" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>郵便番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.postNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>住所:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.address" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>電話番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.telNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>FAX番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.faxNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>ホームページURL:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.url" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メールアドレス:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.email" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>担当者:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.manager" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>代表者:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.representative" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メモ:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.memo" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 商品（Item）View -->
+    <div id="appItems" class="mt-2">
+        <span class="mr-5 h2">Items</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'itemName', label: '商品名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(itemName)="data">
+                <b-form-input v-model="data.item.itemName" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>単位:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.unit" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>単価:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.basePrice" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>原価:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.cost" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メモ:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.memo" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 請求書（Invoice）View -->
+    <div id="appInvoices" class="mt-2">
+        <span class="mr-5 h2">Invoices</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'title', label: '件名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(title)="data">
+                <b-form-input v-model="data.item.title" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>請求書番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.applyNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>日付:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.applyDate" type="date" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>請求書有効期限:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.expiry" type="date" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メモ:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.memo" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>備考:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.remarks" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>内税・外税:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isTaxExp" @change="data.item.isTaxExp">
+                                </b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>請求書_商品一覧</b></b-col>
+                        <b-col>
+                            {{ data.item.invoice_items }}
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 請求書＿商品（Invoice_Items）View -->
+    <div id="appInvoice_Items" class="mt-2">
+        <span class="mr-5 h2">Invoice_Items</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'price', label: '値段' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(price)="data">
+                <b-form-input v-model="data.item.price" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>個数:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.count" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 見積書（Quotation）View -->
+    <div id="appQuotations" class="mt-2">
+        <span class="mr-5 h2">Quotations</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'title', label: '件名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(title)="data">
+                <b-form-input v-model="data.item.title" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>見積書番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.applyNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>日付:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.applyDate" type="date" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>見積書有効期限:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.expiry" type="date" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メモ:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.memo" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>備考:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.remarks" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>内税・外税:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isTaxExp" @change="data.item.isTaxExp">
+                                </b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>見積書_商品一覧:</b></b-col>
+                        <b-col>
+                            {{ data.item.quotation_items }}
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 見積書＿商品（Invoice_Items）View -->
+    <div id="appQuotation_Items" class="mt-2">
+        <span class="mr-5 h2">Quotation_Items</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'price', label: '値段' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(price)="data">
+                <b-form-input v-model="data.item.price" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>個数:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.count" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- メモ（Memo）View -->
+    <div id="appMemos" class="mt-2">
+        <span class="mr-5 h2">Memos</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'title', label: '件名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(title)="data">
+                <b-form-input v-model="data.item.title" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>内容:</b></b-col>
+                        <b-col>
+                            <b-form-textarea v-model="data.item.content" type="text">
+                                </b-form-input>
+                        </b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 単位（Unit）View -->
+    <div id="appUnits" class="mt-2">
+        <span class="mr-5 h2">Units</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <b-button class="ml-2" @click='addRow'>+</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'unitName', label: '件名' },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <template v-slot:cell(unitName)="data">
+                <b-form-input v-model="data.item.unitName" type="text" size="sm"></b-form-input>
+            </template>
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row>
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <!-- 設定（Setting）View -->
+    <div id="appSetting" class="mt-2">
+        <span class="mr-5 h2">Setting</span>
+        <b-button @click='getItems'>読み込み</b-button>
+        <div class="mt-2"></div>
+        <b-table hover caption-top striped small primary-key="id" id="clist" sort-by="id" small head-variant="light"
+            :items="items" :fields="[
+                        {  key: 'id', label: 'ID',  sortable: true },
+                        {  key: 'control', label: '操作'},
+                      ]">
+            <!-- <template v-slot:cell(companyName)="data">
+                <b-form-input v-model="data.item.companyName" type="text" size="sm"></b-form-input>
+            </template> -->
+            <template v-slot:cell(control)="data">
+                <b-button v-if="data.item.isInsert" @click="insertItem(data.item)">保存</b-button>
+                <b-button v-else @click="updateItem(data.item)">更新</b-button>
+                <b-button v-if="data.item.isInsert" @click="getItems">キャンセル</b-button>
+                <b-button v-else @click="deleteItem(data.item)">削除</b-button>
+                <b-form-checkbox v-model="data.detailsShowing" @change="data.toggleDetails">詳細</b-form-checkbox>
+            </template>
+            <template #row-details="data">
+                <b-card>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>会社名:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.companyName" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>代表者名:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.representative" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>郵便番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.postNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>住所:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.address" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>電話番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.telNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>FAX番号:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.faxNumber" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>ホームページURL:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.url" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>メールアドレス:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.email" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>ロゴファイルパス:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.logoFilePath" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>印鑑ファイルパス:</b></b-col>
+                        <b-col>
+                            <b-form-input v-model="data.item.stampFilePath" type="text" size="sm"></b-form-input>
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>ロゴ見積書表示:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isDisplayQuotationLogo"
+                                @change="data.item.isDisplayQuotationLogo">
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>ロゴ請求書表示:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isDisplayInvoiceLogo"
+                                @change="data.item.isDisplayInvoiceLogo">
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>ロゴ納品書表示:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isDisplayDeliveryLogo"
+                                @change="data.item.isDisplayDeliveryLogo">
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>印鑑見積書表示:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isDisplayQuotationStamp"
+                                @change="data.item.isDisplayQuotationStamp">
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>印鑑請求書表示:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isDisplayInvoiceStamp"
+                                @change="data.item.isDisplayInvoiceStamp">
+                        </b-col>
+                    </b-row>
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>印鑑納品書表示:</b></b-col>
+                        <b-col>
+                            <b-form-checkbox v-model="data.item.isDisplayDeliveryStamp"
+                                @change="data.item.isDisplayDeliveryStamp">
+                        </b-col>
+                    </b-row>
+
+                    <!-- <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>作成日:</b></b-col>
+                        <b-col>{{ data.item.createdAt }}</b-col>
+                    </b-row> -->
+
+                    <b-row class="mb-2">
+                        <b-col sm="3" class="text-sm-right"><b>更新日:</b></b-col>
+                        <b-col>{{ data.item.updatedAt }}</b-col>
+                    </b-row>
+
+                    <b-button size="sm" @click="data.toggleDetails">詳細を隠す</b-button>
+                </b-card>
+            </template>
+        </b-table>
+    </div>
+
+    <script>
+        var mixin = {
+            methods: {
+                getItems: async function () {
+                    self = this;
+                    url = self.baseUrlItems;
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.items = response.data;
+                        });
+                },
+                insertItem: async function (item) {
+                    url = self.baseUrlItem;
+                    await axios.post(url, item)
+                        .then(function (response) {
+                            console.log(response);
+                            self.getItems();
+                        });
+                },
+                updateItem: async function (item) {
+                    url = self.baseUrlItem + "/" + item.id;
+                    await axios.put(url, item)
+                        .then(function (response) {
+                            console.log(response);
+                            self.getItems();
+                        });
+                },
+                deleteItem: async function (item) {
+                    url = self.baseUrlItem + "/" + item.id;
+                    await axios.delete(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.getItems();
+                        });
+                },
+                addRow: function () {
+                    this.items.push({
+                        isInsert: true
+                    });
+                }
+            }
+        }
+
+        var appUsers = new Vue({
+            el: '#appUsers',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/users",
+                baseUrlItem: "/user",
+            }
+        })
+
+        var appCustomers = new Vue({
+            el: '#appCustomers',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/customers",
+                baseUrlItem: "/customer",
+            }
+        })
+
+        var appItems = new Vue({
+            el: '#appItems',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/items",
+                baseUrlItem: "/item"
+            }
+        })
+
+        var appInvoices = new Vue({
+            el: '#appInvoices',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/invoices",
+                baseUrlItem: "/invoice"
+            }
+        })
+
+        var appInvoice_Items = new Vue({
+            el: '#appInvoice_Items',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/invoice_items",
+                baseUrlItem: "/invoice_item"
+            }
+        })
+
+        var appQuotations = new Vue({
+            el: '#appQuotations',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/quotations",
+                baseUrlItem: "/quotation"
+            }
+        })
+
+        var appQuotation_Items = new Vue({
+            el: '#appQuotation_Items',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/quotation_items",
+                baseUrlItem: "/quotation_item"
+            }
+        })
+
+        var appMemos = new Vue({
+            el: '#appMemos',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/memos",
+                baseUrlItem: "/memo"
+            }
+        })
+
+        var appUnits = new Vue({
+            el: '#appUnits',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/units",
+                baseUrlItem: "/unit"
+            }
+        })
+
+        var appSetting = new Vue({
+            el: '#appSetting',
+            mixins: [mixin],
+            data: {
+                items: [],
+                baseUrlItems: "/settings",
+                baseUrlItem: "/setting"
+            }
+        })
+
+    </script>
+
+</body>
+
+</html>

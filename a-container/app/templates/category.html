@@ -1,0 +1,268 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .sm-mode {
+                display: none;
+            }
+
+            .pc-mode {
+                display: block;
+            }
+
+            @media screen and (max-width:690px) {
+                .sm-mode {
+                    display: block;
+                }
+
+                .pc-mode {
+                    display: none;
+                }
+            }
+
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #categorytable td {
+                vertical-align: middle;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- ヘッダー -->
+                <setting-header :mode-name="modeName"></setting-header>
+
+                <!-- 空行 -->
+                <b-row class="mb-5"></b-row>
+                <b-row class="mb-5"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-card border-variant="white" class="mb-3 text-center" header="カテゴリ一覧"
+                            header-border-variant="light">
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="CategoryAddRow();">
+                                        ＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <b-table responsive hover small id="categorytable" sort-by="ID" small label="Table Options"
+                                :items=categories :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'id', label: 'No.', thClass: 'text-center', tdClass: 'text-center', },
+                          {  key: 'categoryName', label: 'カテゴリ名', thClass: 'text-center', tdClass: 'text-center', },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectCategory(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                            </b-table>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(category.createdAt)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(category.updatedAt)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="カテゴリ入力"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="カテゴリ名"
+                                        label-for="categoryName" label-align="right">
+                                        <b-form-input v-model="category.categoryName" id="categoryName" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row class="mb-5"></b-row>
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <router-link to="?page=index">
+                            <b-button @click="getCategories();" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                        </router-link>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="modalShow(category,'upsertModal');">保存
+                        </b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(category,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 保存モーダル -->
+            <div>
+                <select-modal modal-name='upsertModal' modal-message='保存しますか？'
+                    @selected="upsertModalProcess($event);" />
+            </div>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    categories: [],               //全件category
+                    category: [],                //選択中のcategory
+                },
+                methods: {
+                    // ---Categories---
+                    getCategories: async function () {
+                        self = this;
+                        await axios.get("/categories")
+                            .then(function (response) {
+                                console.log(response);
+                                self.categories = response.data;
+                            });
+                    },
+                    bulkUpsert(item) {
+                        if (!item.id) {
+                            this.insertCategory(item);
+                        }
+                        else {
+                            this.updateCategory(item);
+                        }
+                    },
+                    insertCategory: async function (item) {
+                        self = this;
+                        await axios.post("/category", item)
+                            .then(function (response) {
+                                Vue.set(self.category, 'id', response.data.id)
+                                self.getCategories();
+                                self.category.isInsert = false;
+                            });
+                    },
+                    updateCategory: async function (item) {
+                        self = this;
+                        await axios.put("/category/" + item.id, item)
+                            .then(function (response) {
+                                self.getCategories();
+                                console.log(response);
+                            });
+                    },
+                    deleteCategory: async function (item) {
+                        self = this;
+                        await axios.delete("/category/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.category = '';
+                                self.getCategories();
+                            });
+                    },
+                    CategoryAddRow: function () {
+                        self = this;
+                        self.categories.push({
+                            isInsert: true,
+                        });
+                        self.category = self.categories.slice(-1)[0];
+                        localStorage.setItem('category', JSON.stringify(self.category))
+                    },
+                    selectCategory: function (item) {
+                        this.category = item;
+                        console.log(this.category);
+                        localStorage.setItem('category', JSON.stringify(item))
+                    },
+                    getCategory: async function (item) {
+                        self = this;
+                        await axios.get("/category/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.category, key, value);
+                                }
+                            });
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    modalShow: function (item, modalName) {
+                        this.category = item;
+                        console.log(this.category);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteCategory(this.category);
+                        }
+                    },
+                    upsertModalProcess(result) {
+                        this.$bvModal.hide('upsertModal');
+                        if (result === true) {
+                            this.bulkUpsert(this.category);
+                        }
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = 'カテゴリ管理';
+                    if (localStorage.getItem('category'))
+                        this.category = JSON.parse(localStorage.getItem('category'));
+                    this.getCategories();
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+
+        </script>
+        <% endblock %>

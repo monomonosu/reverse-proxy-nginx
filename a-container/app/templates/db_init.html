@@ -1,0 +1,96 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <b-card class="fixed-top header" style="background: rgba(255,255,255,0.5);">
+                <b-row>
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col>
+                            </b-col>
+                            <b-col class="text-right">
+                                <b-button pill href="/setting-page">設定画面へ
+                                </b-button>
+                                <b-button pill href="/crescom-support-page">管理画面へ
+                                </b-button>
+                            </b-col>
+                            <!-- サイドバー -->
+                            <b-col cols="1" class="text-right">
+                                <sc-menu v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="DB初期化"
+                            header-border-variant="light">
+                            <p>DBの初期化を行います。</p>
+                            <p>ご利用には十分気を付けてご利用ください。</p>
+                            <b-button class="mt-5" variant="danger" size="lg" @click="modalShow('dbInitModal')">DB初期化
+                            </b-button>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+
+                <!-- 削除モーダル -->
+                <select-modal-static modal-name='dbInitModal' modal-message='本当によろしいですか？'
+                    @selected="initModalProcess($event);" />
+
+            </div>
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            });
+
+            var app = new Vue({
+                el: '#app',
+                methods: {
+                    modalShow: function (modalName) {
+                        this.$bvModal.show(modalName);
+                    },
+                    initModalProcess(result) {
+                        this.$bvModal.hide('dbInitModal');
+                        if (result === true) {
+                            this.dbInit();
+                        }
+                    },
+                    dbInit: async function () {
+                        self = this;
+                        await axios.delete("/db-init")
+                            .then(function (response) {
+                                console.log(response);
+                            });
+                    },
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = 'データベース初期化';
+                },
+                router,
+                computed: {
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+        </script>
+        <% endblock %>

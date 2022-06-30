@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/danfojs@1.1.0/lib/bundle.min.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="plot_div"></div>
+    <script>
+
+        dfd.readJSON("http://localhost:5010/invoices")
+            .then(df => {
+                let total_list = []
+                let cost_list = []
+                let ym_list = []
+                for (i = 0; i < df.index.length; i++) {
+                    items = new dfd.DataFrame(df.loc({ columns: ['invoice_items'] }).iloc({ rows: [i] }).values[0][0])
+                    total_list.push(items['price'].mul(items['count']).sum())
+                    cost_list.push(items['cost'].mul(items['count']).sum())
+                    trim_l = df.iloc({ rows: [i] })['applyDate'].values[0].split('-') //日付編集
+                    trimDay = trim_l[0] + '年' + trim_l[1] + '月' //年月だけにする
+                    ym_list.push(trimDay)
+                }
+                cdf = new dfd.DataFrame({ "YM": ym_list, "total": total_list, "cost": cost_list }) //グラフに必要な最小限のDFを作成する。
+                cdf.print()
+                
+                //年月でグループ化する
+                let grp = cdf.groupby(["YM"]); //グループ化
+                gdf = grp.col(["total", "cost"]).sum(); //合計を求める
+                gdf.print();
+
+                gdf.setIndex({ index: gdf['YM'].values, inplace: true }) //年月をインデックスに変換
+                gdf.drop({ columns: ['YM'], inplace: true }) //年月カラムはいらないので削除
+                gdf.print();
+
+                gdf.plot("plot_div").bar()
+
+            }).catch(err => {
+                console.log(err);
+            })
+
+    </script>
+
+
+</body>
+
+</html>

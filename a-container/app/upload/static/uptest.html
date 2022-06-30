@@ -1,0 +1,198 @@
+<html>
+<style>
+    .trim-img {
+        object-fit: cover;
+      }
+
+</style>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+    <link href="images/favicon.ico" rel="shortcut icon">
+    -->
+<title>アップロード</title>
+<!-- Load required Bootstrap and BootstrapVue CSS -->
+
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+<!-- Load fontawesome -->
+<!-- link href="./css/all.css" rel="stylesheet" -->
+<!--load all styles -->
+<!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+<link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+<!-- Load polyfills to support older browsers -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+    crossorigin="anonymous"></script>
+
+<!-- Load Vue followed by BootstrapVue -->
+<script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+<script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+<!-- Load the following for BootstrapVueIcons support -->
+<script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+    crossorigin="anonymous"></script>
+
+<!-- 各種便利なツール塁です必要なときに随時使用のこと
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.js"></script>
+    <script src="https://unpkg.com/vue-lazyload/vue-lazyload.js"></script>
+    <script src="./jsQR.js"></script>
+    <script src="https://cozmo.github.io/jsQR/jsQR.js"></script>
+    -->
+
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+
+<style>
+.image-box {
+    position: relative;
+}
+
+.image-in-check {
+    width: 15px;
+    height: 15px;
+    color: #ffffff;
+    background-color: #2779bd;
+    display: flex;
+    /*justify-content: center;*/
+    /*align-items: center;*/
+    font-size: 1.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    
+    position: absolute;
+    top: -20;
+    left: 10;
+}
+
+</style>
+
+
+<div id="app">
+
+    <h3>フォルダーIDを指定してください。</h3><br/>
+    <b-form-input type="text" v-model="fileId" ></b-form-input>
+    <b-button @click="getFileList(fileId)" >読込</b-button>
+
+    <h2 class="mt-5">現在登録されているファイルは次のとおりです。</h2><br/>
+    <p><b-button @click="deleteFiles(fileId)" >削除</b-button></p>
+    <template v-for="f in dicFiles">
+        <span class="image-box">
+            <img :src="'../'+f.thumb_path" width="90" height=90 class="trim-img ml-2 mt-2">
+            <input type="checkbox" v-model="f.isActive" class="image-in-check">
+        </span>
+
+    </template>
+
+    <h3 class="mt-5">アップロードファイル</h3><br/>
+
+    <b-card style="max-width: 20rem">
+        <form action="upload-files" class="dropzone" id="my-dropzone">
+            <input hidden type="text" name="fileId" v-model="fileId" >
+
+            <input hidden type="file" name="file" id="my-dropzone" multiple>
+        </form>    
+    </b-card>
+    <script>
+        Dropzone.options.myDropzone = { // camelized version of the `id`
+            dictDefaultMessage: 'ここにファイルをドロップしてね',
+            init: function(){
+                this.on("complete", file => {
+                    console.log("complete A file has been added");
+                    this.removeFile(file);
+                    app.getFileList(app.fileId);
+                });
+            }
+        };
+    </script>
+<br/><br/>
+   
+</div>
+
+<script>
+
+    Vue.filter('nf', function (val) {
+        return val.toLocaleString();
+    });
+
+    var app = new Vue({
+        el: '#app',
+        data: {
+            isList: true,
+            dicFiles:[],
+            fileId: '001',
+        },
+        methods: {
+            getFileList: async function (fid) {
+                self = this;
+                //url = "http://localhost/file_list";
+                url = "file-list/"+fid;
+                await axios.get(url)
+                    .then(function (response) {
+                        console.log(response.data);
+                        let arry =[];
+                        for(const f of response.data){
+                            if (f.isfile){
+                                f.isActive = null
+                                arry.push(f)
+                            }
+                        }
+                        self.dicFiles=arry;
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        alert("ネットワークエラーです。ローカルサーバーは立ち上がっていますか？")
+                    });
+            },
+            deleteFiles: async function(fid){
+                self = this;
+                let flist=[];
+                let thumbs=[];
+                for(const f of this.dicFiles){
+                    if(f.isActive){
+                        console.log(f.path,f.isActive)
+                        console.log(f.thumb_path,f.isActive)
+                        flist.push(f.path)
+                        thumbs.push(f.thumb_path)
+                    }
+                }
+                console.log(flist,thumbs)
+                url= "delete-files";
+                
+                await axios.delete(url,
+                        {
+                            headers:{
+                                'Content-Type': 'application/json'
+                            },
+                            data:{
+                                files: flist,
+                                thumbs: thumbs
+                            }
+                        }
+                    )    
+                    .then(function (response) {
+                        console.log(response.data);
+                        self.getFileList(fid);
+                    });                
+            }
+
+        },
+        mounted: function () {
+            this.getFileList('001');
+ 
+
+        }
+    });
+</script>
+
+</html >

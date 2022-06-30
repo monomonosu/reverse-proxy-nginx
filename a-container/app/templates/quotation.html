@@ -1,0 +1,1369 @@
+<% extends "head.html" %>
+    <% block content %>
+        <!-- print.js -->
+        <script src="../static/library/print.min.js"></script>
+        <link rel="stylesheet" href="../static/library/print.min.css" type="text/css" />
+
+        <!-- viewerとして使用-->
+        <script src="../static//library/tingle.min.js"></script>
+        <link rel="stylesheet" href="../static/library/tingle.css" type="text/css" />
+
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #quotationtable>thead>tr>th {
+                pointer-events: none;
+            }
+
+            .th-customer-any-number,
+            .th-apply-date {
+                pointer-events: auto !important;
+            }
+
+            #quotationtable td,
+            #quotation_items_table td {
+                vertical-align: middle;
+            }
+
+            .td-any {
+                width: 70px;
+            }
+
+            .td-count {
+                width: 75px;
+            }
+
+            .td-unit {
+                width: 90px;
+            }
+
+            .td-price {
+                max-width: 100px;
+            }
+
+            #detail-add-button,
+            #detail-del-button {
+                border-color: #e9ecf0;
+                background-color: #e9ecf0;
+                color: #686e72;
+            }
+
+            #detail-add-button:hover,
+            #detail-del-button:hover {
+                border-color: #686e72;
+                background-color: #686e72;
+                color: #e9ecf0;
+            }
+
+            #tdAmount {
+                background-color: #ccecf180;
+            }
+
+            #invoicesIndicateAmount>div {
+                padding: 0;
+            }
+
+            /* スピンボタン無効化 */
+            /* Chrome/Safari */
+            input[type="number"]::-webkit-outer-spin-button,
+            input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+            }
+
+            /* Firefox */
+            input[type="number"] {
+                -moz-appearance: textfield;
+            }
+
+            #dropdown-dropup__BV_button_ {
+                border-radius: 20px 0 0 20px;
+            }
+
+            #dropdown-dropup__BV_toggle_ {
+                border-radius: 0 20px 20px 0;
+            }
+
+            /* --- for upload --- */
+            .box {
+                /* border: 1px solid #333333; */
+                /* width: 200px; */
+                height: 135px;
+                overflow-y: scroll;
+            }
+
+            .image-in-check {
+                width: 15px;
+                height: 15px;
+                color: #ffffff;
+                background-color: #2779bd;
+                display: flex;
+                /*justify-content: center;*/
+                /*align-items: center;*/
+                font-size: 1.5rem;
+                border-radius: 50%;
+                cursor: pointer;
+
+                position: absolute;
+                top: 5;
+                left: 5;
+                z-index: 0;
+            }
+
+            .file-card {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            #item-modal___BV_modal_body_ {
+                padding-top: 0;
+            }
+
+            #item-modal-card {
+                padding: 0.25rem 1.25rem;
+                border-bottom: 1px solid #CED4DA;
+            }
+
+            @media screen and (max-width: 1200px) {
+                #input-interval {
+                    display: none
+                }
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- 空行 -->
+                <b-row class="mb-3"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col></b-col>
+                            <b-col class="text-right">
+                                <sc-menu class="mb-3" v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                        <b-card border-variant="white" class="mb-3 text-center" header="見積書一覧"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-input-group>
+                                        <b-form-input v-model="searchQuotationWord" id="searchQuotationWord" size="sm"
+                                            placeholder="🔍　日付 or 得意先名">
+                                        </b-form-input>
+                                        <b-input-group-append>
+                                            <b-button variant="primary" size="sm" @click="searchQuotation">検索
+                                            </b-button>
+                                        </b-input-group-append>
+                                    </b-input-group>
+                                </b-col>
+                                <b-col sm>
+                                </b-col>
+                                <b-col class="text-right">
+                                    <b-col sm class="text-left">
+                                        <b-form-group label-cols="4" label-cols-lg="4" label-size="sm"
+                                            label-align="right" label="状況">
+                                            <b-form-select v-model="quotationsShowValue" :options="[
+                                            {value:'notConverted',text:'見積中'},
+                                            {value:'converted',text:'見積書→請求書'},
+                                            ]" size="sm">
+                                            </b-form-select>
+                                        </b-form-group>
+                                    </b-col>
+                                </b-col>
+                            </b-row>
+                            <b-row align-h="end">
+                                <p class="mr-3">表示件数 {{ quotationsIndicateCount }}件</p>
+                            </b-row>
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="QuotationAddRow();">＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <!-- ヘッダーをクリックするとソートが解除されるバグ解消のために、ソート可能なth以外はクリック無効にしているので注意 -->
+                            <b-table responsive hover small id="quotationtable" label="Table Options"
+                                :items=quotationsIndicateIndex :sort-by.sync="this.sortByQuotations"
+                                :sort-desc.sync="this.sortDesc" :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'applyNumber', label: '見積番号', thClass: 'text-center', tdClass: 'text-center' },
+                          {  key: 'applyDate', label: '日付', thClass: 'th-apply-date text-center', tdClass: 'text-center', sortable: true },
+                          {  key: 'customerAnyNumber', label: 'No.', thClass: 'th-customer-any-number text-center', tdClass: 'text-center', sortable: true },
+                          {  key: 'customerName', label: '得意先名', thClass: 'text-center', },
+                          {  key: 'title', label: '件名', thClass: 'text-center', },
+                          {  key: 'totalAmount', label: '見積金額', thClass: 'text-center', tdClass: 'text-right' },
+                          {  key: 'numberOfAttachments', label: '', tdClass: 'text-center' },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectQuotation(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                                <template v-slot:cell(applyDate)="data">
+                                    {{formatDate(data.item.applyDate)}}
+                                </template>
+                                <template v-slot:cell(totalAmount)="data">
+                                    {{amountCalculation(data.item)|nf}}
+                                </template>
+                                <template v-slot:cell(numberOfAttachments)="data">
+                                    <b-img v-if="countedFiles[data.item.applyNumber] > 0"
+                                        src="../static/images/icon/icon_clip.png"></b-img>
+                                </template>
+                            </b-table>
+                            <b-row align-h="end">
+                                <b-button v-if="isMore" variant="primary" size="sm" @click="showMore">さらに表示</b-button>
+                            </b-row>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <b-row>
+                            <b-col>
+                                <span class="mr-2">見積No:{{quotation.applyNumber}}</span>
+                            </b-col>
+                            <b-col class="text-right">
+                                <span class="mr-2">作成日:{{formatDate(quotation.createdAt)}}</span>
+                                <span class="mr-2">更新日:{{formatDate(quotation.updatedAt)}}</span>
+                            </b-col>
+                        </b-row>
+                        <b-card border-variant="white" class="text-center" header="見積書入力" header-border-variant="light">
+                            <b-row>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-xl="2" label-size="sm" label="得意先名(必須)"
+                                        label-for="customer" class="customer" label-align="right">
+                                        <b-container class="text-left" style="padding: 0;">
+                                            <b-button @click="$bvModal.show('customer-modal')" size="sm"
+                                                variant="primary" class="mr-3">検索</b-button>
+                                            {{quotation.customerName}}
+                                        </b-container>
+                                        <!-- 得意先一覧モーダル -->
+                                        <b-modal size="xl" id="customer-modal">
+                                            <p>得意先を選択してください</p>
+                                            <b-form-group label-cols="2" label-size="sm" label-align="center" label="検索"
+                                                label-for="searchCustomerWord">
+                                                <b-form-input v-model="searchCustomerWord" id="searchCustomerWord"
+                                                    size="sm">
+                                                </b-form-input>
+                                            </b-form-group>
+                                            <b-row align-h="end">
+                                                <b-form-checkbox class="mr-3" v-model="isShowFavorite">お気に入り
+                                                </b-form-checkbox>
+                                                <b-form-checkbox class="mr-3" v-model="isShowAll">全て表示
+                                                </b-form-checkbox>
+                                            </b-row>
+                                            <b-table hover striped small sort-by="ID" id="customer-table"
+                                                :items="searchCustomers" @row-clicked="customerSelect"
+                                                label="Table Options" :fields="[
+                                  {  key: 'anyNumber', label: 'No.' },
+                                  {  key: 'customerName', label: '得意先名' },
+                                ]"></b-table>
+                                        </b-modal>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-row>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="敬称"
+                                                label-for="honorificTitle" label-align="right">
+                                                <b-form-input v-model="quotation.honorificTitle" id="honorificTitle"
+                                                    size="sm" autocomplete="off">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="日付"
+                                                label-for="applyDate" label-align="right">
+                                                <b-form-input v-model="quotation.applyDate" id="applyDate" size="sm"
+                                                    type="date">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-xl="2" label-size="sm" label="部署"
+                                        label-for="department" label-align="right">
+                                        <b-form-input v-model="quotation.department" id="department" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-row>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="有効期限"
+                                                label-for="expiry" label-align="right">
+                                                <b-form-input list="list-expiry" v-model="quotation.expiry" size="sm"
+                                                    autocomplete="off"></b-form-input>
+                                                <datalist id="list-expiry">
+                                                    <option v-for="expiry in expiryOptions">{{expiry}}</option>
+                                                </datalist>
+                                            </b-form-group>
+                                        </b-col>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="担当者"
+                                                label-for="manager" label-align="right">
+                                                <b-form-input v-model="quotation.manager" id="manager" size="sm"
+                                                    autocomplete="off">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-xl="2" label-size="sm" label="先方担当者"
+                                        label-for="otherPartyManager" label-align="right">
+                                        <b-form-input v-model="quotation.otherPartyManager" id="otherPartyManager"
+                                            size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-row>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="納品期日"
+                                                label-for="dayOfDelivery" label-align="right">
+                                                <b-form-input list="list-dayOfDelivery"
+                                                    v-model="quotation.dayOfDelivery" size="sm" autocomplete="off">
+                                                </b-form-input>
+                                                <datalist id="list-dayOfDelivery">
+                                                    <option v-for="dayOfDelivery in dayOfDeliveryOptions">
+                                                        {{dayOfDelivery}}</option>
+                                                </datalist>
+                                            </b-form-group>
+                                        </b-col>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="取引条件"
+                                                label-for="termOfSale" label-align="right">
+                                                <b-form-input list="list-termOfSale" v-model="quotation.termOfSale"
+                                                    size="sm" autocomplete="off">
+                                                </b-form-input>
+                                                <datalist id="list-termOfSale">
+                                                    <option v-for="termOfSale in termOfSaleOptions">
+                                                        {{termOfSale}}</option>
+                                                </datalist>
+                                            </b-form-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col xl>
+                                    <div id="input-interval" style="height: 40px;"></div>
+                                    <b-form-group label-cols="2" label-cols-xl="2" label-size="sm" label="件名"
+                                        label-for="title" label-align="right">
+                                        <b-form-input v-model="quotation.title" id="title" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-xl="2" label-size="sm" label="メモ"
+                                        label-for="メモ" label-align="right">
+                                        <b-form-textarea v-model="quotation.memo" size="sm" rows="3">
+                                        </b-form-textarea>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                        <!--  table list & edit -->
+                        <b-table hover caption-top small id="quotation_items_table" primary-key="id" small
+                            label="Table Options" :items=quotation.quotation_items :fields="[
+                          {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'rowNum', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'itemId', thClass: 'd-none', tdClass:'d-none' },
+                          {  key: 'any', label: '', tdClass:'td-any' },
+                          {  key: 'itemName', label: '内容' ,sortable: true},
+                          {  key: 'count',   label: '数量', tdClass:'td-count' },
+                          {  key: 'unit',   label: '単位', tdClass:'td-unit' },
+                          {  key: 'price', label: '単価', tdClass:'td-price' },
+                          {  key: 'amount', label: '金額' },
+                          {  key: 'detail', label: '詳細',class:'text-center' },
+                          {  key: 'addRow', label: '追加',class:'text-center' },
+                          {  key: 'delete', label: '削除',class:'text-center' },
+                        ]">
+
+                            <template v-slot:cell(any)="data">
+                                <b-form-input v-model="data.item.any" size="sm" autocomplete="off"></b-form-input>
+                            </template>
+                            <template v-slot:cell(itemName)="data">
+                                <textarea v-model="data.item.itemName" class="form-control form-control-sm itemNameArea"
+                                    rows="1" @dblclick="showModalItems(); selectQuotationItem(data.item);"
+                                    v-on:keydown.enter="selectQuotationItem(data.item);Vue.set(self.quotationItem,'itemId',null);"
+                                    :style="heightItemName(data.item.itemName)">
+                                </textarea>
+
+                                <b-modal size="xl" ref="items-modal" ok-only ok-title="cancel" hide-header
+                                    id="item-modal">
+                                    <b-row>
+                                        <div id="item-modal-card" style="width: 100%;" class="mb-3">商品一覧</div>
+                                    </b-row>
+                                    <b-row>
+                                        <b-col>
+                                        </b-col>
+                                        <b-col>
+                                            <b-row class="mb-1">
+                                                <b-col cols="4">
+                                                </b-col>
+                                                <b-col cols="8">
+                                                    <b-form-input v-model="searchItemWord" id="searchItemWord" size="sm"
+                                                        placeholder="🔍">
+                                                    </b-form-input>
+                                                </b-col>
+                                            </b-row>
+                                            <b-row class="mb-1">
+                                                <b-col cols="4">
+                                                </b-col>
+                                                <b-col cols="8">
+                                                    <b-form-select v-model="searchItemSelectCategory"
+                                                        :options="categories" size="sm">
+                                                        <template #first>
+                                                            <b-form-select-option value='' disabled>カテゴリー
+                                                            </b-form-select-option>
+                                                        </template>
+                                                    </b-form-select>
+                                                </b-col>
+                                            </b-row>
+                                            <b-row class="mb-2">
+                                                <b-col cols="4">
+                                                </b-col>
+                                                <b-col cols="8">
+                                                    <b-form-select v-model="searchItemSelectMaker" :options="makers"
+                                                        size="sm">
+                                                        <template #first>
+                                                            <b-form-select-option value='' disabled>メーカー
+                                                            </b-form-select-option>
+                                                        </template>
+                                                    </b-form-select>
+                                                </b-col>
+                                            </b-row>
+                                        </b-col>
+                                    </b-row>
+                                    <b-table hover striped small sort-by="ID" id="items-table" :items="searchItems"
+                                        @row-clicked="itemSelect" label="Table Options" :fields="[
+                                  {  key: 'id', label: 'No.' },
+                                  {  key: 'itemName', label: '商品名' },
+                                  {  key: 'unit',   label: '単位' },
+                                  {  key: 'basePrice',  label: '単価' },
+                                  {  key: 'baseCost',  label: '原価' },
+                                  {  key: 'memo', label: 'メモ' },
+                                ]"></b-table>
+                                </b-modal>
+
+                            </template>
+                            <template v-slot:cell(count)="data">
+                                <b-form-input v-model="data.item.count" type="number" size="sm"
+                                    :formatter="formatter_count"></b-form-input>
+                            </template>
+                            <template v-slot:cell(unit)="data">
+                                <b-form-select v-model="data.item.unit" :options="units" size="sm"></b-form-select>
+                            </template>
+                            <template v-slot:cell(price)="data">
+                                <b-form-input v-model="data.item.price" type="number" size="sm"></b-form-input>
+                            </template>
+                            <template v-slot:cell(amount)="data">
+                                <div class="text-right">{{data.item.count*data.item.price|nf}}</div>
+                            </template>
+
+                            <template v-slot:cell(detail)="data">
+                                <b-form-checkbox @change="data.toggleDetails"></b-form-checkbox>
+                            </template>
+
+                            <template #row-details="data">
+                                <b-row>
+                                    <div style="width: 55px;"></div>
+                                    <b-col cols="3">
+                                        <b-form-group label-cols="4" label-cols-lg="4" label-size="sm" label="原価単価:"
+                                            label-for="cost" label-align="right">
+                                            <b-form-input v-model="data.item.cost" id="cost" size="sm" type="number">
+                                            </b-form-input>
+                                        </b-form-group>
+                                    </b-col>
+                                    <b-col>
+                                        <p class="mt-1">原価: {{costTotal(data)}}</p>
+                                    </b-col>
+                                    <b-col>
+                                        <p class="mt-1">原価率: {{costRate(data)}}</p>
+                                    </b-col>
+                                    <b-col>
+                                        <p class="mt-1">粗利金額: {{profit(data)}}</p>
+                                    </b-col>
+                                    <b-col cols="4">
+                                        <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="備考:"
+                                            label-for="remarks" label-align="right">
+                                            <b-form-input v-model="data.item.remarks" id="remarks" size="sm">
+                                            </b-form-input>
+                                        </b-form-group>
+                                    </b-col>
+                                </b-row>
+                            </template>
+
+                            <template v-slot:cell(addRow)="data">
+                                <b-button size="sm" id="detail-add-button" @click="addRowQuotationItem(data)">✚
+                                </b-button>
+                            </template>
+                            <template v-slot:cell(delete)="data">
+                                <b-button size="sm" id="detail-del-button" @click="removeRowQuotationItem(data)">－
+                                </b-button>
+                            </template>
+
+                        </b-table>
+
+                        <!-- 商品項目を追加するプラスボタン -->
+                        <!-- <b-row class="d-flex justify-content-end" id="item_add">
+                            <b-col cols="16" md="auto">
+                                <b-button pill variant="primary" @click="addRowQuotationItem();">✙</b-button>
+                            </b-col>
+                        </b-row> -->
+
+                        <div class="mt-5"></div>
+
+                        <b-row>
+                            <b-col md>
+                                <b-form-textarea v-model="quotation.remarks" id="remarks" size="sm" type="text" rows="6"
+                                    placeholder="備考欄">
+                                </b-form-textarea>
+                            </b-col>
+                            <b-col md>
+                                <b-container style="max-width: 500px; margin-right: 0;">
+                                    <b-table-simple borderless>
+                                        <b-tr>
+                                            <b-td class="text-right" style="width: 100px;">小計</b-td>
+                                            <b-td class="text-center" id="tdAmount"
+                                                style="border-bottom: 2px solid white;">
+                                                {{sum|nf}}
+                                            </b-td>
+                                            <b-td style="width: 100px;">
+                                                <b-form-checkbox v-model="quotation.isTaxExp" class="ml-3">外税
+                                                </b-form-checkbox>
+                                            </b-td>
+                                        </b-tr>
+                                        <b-tr>
+                                            <b-td class="text-right">消費税</b-td>
+                                            <b-td class="text-center" id="tdAmount"
+                                                style="border-bottom: 2px solid white;">
+                                                {{taxAmount|nf}}</b-td>
+                                            <b-td style="padding: 8px;">
+                                                <b-input-group append="%" size="sm">
+                                                    <b-form-input v-model="quotation.tax" id="tax" size="sm">
+                                                    </b-form-input>
+                                                </b-input-group>
+                                            </b-td>
+                                        </b-tr>
+                                        <b-tr>
+                                            <b-td class="text-right">見積総額</b-td>
+                                            <b-td class="text-center" id="tdAmount">{{priceIncludingTax|nf}}</b-td>
+                                        </b-tr>
+                                    </b-table-simple>
+                                </b-container>
+                            </b-col>
+                        </b-row>
+                        <!-- アップロード機能　-->
+                        <b-row>
+                            <b-col md="3">
+                                <form action="upload-files/s/upload/quotes" class="dropzone" id="dropz">
+                                    <input hidden type="text" name="fileId" v-model="quotation.applyNumber">
+
+                                    <input hidden type="file" name="file">
+                                </form>
+                            </b-col>
+                            <b-col>
+                                <div v-if="!dicFiles.length" class="mt-5">
+                                    ←クリックまたはドロップしてファイルをアップロード。
+                                </div>
+
+                                <template v-if="uploadListMode=='list'">
+
+                                    <b-table-simple hover small caption-top responsive class="box">
+                                        <template v-for="f in dicFiles">
+                                            <b-tr>
+                                                <b-td width="5%">
+                                                    <input type="checkbox" v-model="f.isSelect" size="sm">
+                                                </b-td>
+                                                <b-td width="15%">
+                                                    <div @click="selectImgUrl=f.url">
+                                                        <b-img :src="f.urlThumb" width="90" fluid></b-img>
+                                                    </div>
+                                                </b-td>
+                                                <b-td class="ml-5">{{f.filename}}</b-td>
+                                            </b-tr>
+                                        </template>
+                                    </b-table-simple>
+                                </template>
+                                <template v-if="uploadListMode=='card'">
+                                    <div class="file-card ">
+                                        <template v-for="f in dicFiles">
+                                            <b-card border-variant="light">
+                                                <b-img :src="'../'+f.thumbPath" @click="openViewer(f)" width="90" fluid>
+                                                </b-img>
+                                                <input type="checkbox" v-model="f.isSelect" class="image-in-check">
+                                            </b-card>
+                                        </template>
+                                    </div>
+                                </template>
+                            </b-col>
+                            <b-col md="1">
+                                <b-button @click="deleteFiles(quotation.applyNumber)" class="mr-2 mb-3"
+                                    variant="danger"><i class="fas fa-trash-alt"></i>
+                                </b-button>
+                                <b-button v-if="uploadListMode=='list'" @click="uploadListMode='card'" class="mr-2">
+                                    <b-icon icon="app"></b-icon>
+                                </b-button>
+                                <b-button v-if="uploadListMode=='card'" @click="uploadListMode='list'" class="mr-2">
+                                    <b-icon icon="list-task"></b-icon>
+                                </b-button>
+                            </b-col>
+                        </b-row>
+                        <!--アップロード機能ここまで-->
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 表示中見積書の合計金額 -->
+            <b-card v-if="pageName=='index'" class="fixed-bottom footer" id="invoicesIndicateAmount">
+                <b-row>
+                    <b-col cols="8"></b-col>
+                    <b-col sm class="text-right">
+                        <b-form-group label-cols="4" label-size="sm" label="合計：" label-for="quotationsIndicateAmount">
+                            {{quotationsIndicateAmount|nf}}
+                        </b-form-group>
+                    </b-col>
+                    <b-col cols="1"></b-col>
+                </b-row>
+            </b-card>
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <b-button @click="checkChange" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                    </b-col>
+                    <b-col class="text-right" md="auto" cols="auto">
+                        <b-button pill variant="primary" @click="bulkUpsert(quotation);">保存
+                        </b-button>
+                        <b-button v-if="pageName==='show'" pill size="lg" id="copy-button"
+                            @click="modalShow(quotation,'copyModal');" v-b-tooltip.hover.top="'複製'"><i
+                                class="fa-solid fa-copy"></i></b-button>
+                        <b-button v-if="pageName==='show'" pill size="lg" id="convert-button"
+                            @click="modalShow(quotation,'convertModal');" v-b-tooltip.hover.top="'請求書へ変換'"><i
+                                class="fa-solid fa-shuffle"></i></b-button>
+                        <!--
+                        <b-button pill size="lg" variant="primary" @click="pdfout" id="pdfout"
+                            v-b-tooltip.hover.top="'印刷'"><i class="fas fa-print"></i>
+                        </b-button>
+                        -->
+                        <btn-pdf-quotation :func="pdfout"></btn-pdf-quotation>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(quotation,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+            <!-- エラーモーダル -->
+            <confirm-modal-danger :title="title" :message="message"></confirm-modal-danger>
+
+            <!-- コピーモーダル -->
+            <div>
+                <select-modal modal-name='copyModal' modal-message='複製しますか？' @selected="copyModalProcess($event);" />
+            </div>
+            <!-- 変換モーダル -->
+            <div>
+                <select-modal modal-name='convertModal' modal-message='請求書に変換しますか？'
+                    @selected="convertModalProcess($event);" />
+            </div>
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+        </div>
+
+        <script>
+            //カスタマイズと通常読み込みとが必要なものを指定する
+            loadScript(['def-pdf.js', 'btn-pdf.js']);
+
+            Vue.filter('nf', function (val) {
+                if (isNaN(val)) return null
+                return val.toLocaleString();
+            });
+
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    sortByQuotations: 'id',
+                    sortDesc: true,
+                    searchQuotationWord: '',        //請求書検索
+                    quotationsShowValue: 'notConverted',    //請求書検索
+                    quotationsIndicateCount: 0,     //請求書検索
+                    quotationsIndicateAmount: 0,      //一覧表示中見積書の合計金額
+                    searchItemWord: '',             //商品選択モーダル検索
+                    searchItemSelectCategory: '',   //商品選択モーダル検索
+                    searchItemSelectMaker: '',      //商品選択モーダル検索
+                    searchCustomerWord: '',         //得意先選択モーダル検索
+                    quotations: [],               //全件quotation
+                    quotation: [],                //選択中のquotation
+                    oldQuotation: [],
+                    quotationItem: [],            //選択中のquotationItem
+                    customers: [],
+                    items: [],
+                    units: [],
+                    categories: [],
+                    makers: [],
+                    expiryOptions: ['2週間以内', '1ヶ月以内', '2ヶ月以内',],
+                    dayOfDeliveryOptions: ['発注後1週間以内', '発注後2週間以内', '発注後1ヶ月以内', '応相談',],
+                    termOfSaleOptions: ['御社決済条件にて', '代金引換', '納品後2週間以内に決済', '納品後翌月末までに決済', '応相談',],
+                    isShowAll: false,        // trueの時、customer.isHide=falseのもののみindexに表示
+                    isShowFavorite: false,
+                    isMore: false,
+                    //countChanged: 0,
+                    fileId: '', //upload用ID
+                    dicFiles: [],
+                    form: {
+                        file: '',
+                        fileId: ''
+                    },
+                    uploadListMode: 'card', //list,card
+                    title: '',      //モーダルタイトル
+                    message: '',    //モーダルメッセージ
+                    offset: 0,
+                    routeTo: '',
+                    routeFrom: '',
+                    countedFiles: {},
+
+                },
+                methods: {
+                    // ---Quotations---
+                    getQuotations: async function (searchWord = '', offset = 0) {
+                        self = this;
+                        url = '/v1/quotations'
+                        await axios.get(url, {
+                            params: {
+                                search: searchWord,
+                                offset: offset,
+                                moreCheck: true,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                if (offset == 0) {
+                                    self.offset = 0;
+                                    self.quotations = response.data.quotations;
+                                    self.isMore = response.data.isMore;
+                                }
+                                else {
+                                    response.data.quotations.map(quotation => self.quotations.push(quotation));
+                                    self.isMore = response.data.isMore;
+                                }
+                            });
+                    },
+                    bulkUpsert: async function (item) {
+                        if (!item.customerId) {
+                            this.title = 'エラー';
+                            this.message = '得意先を選択してください。';
+                            this.$bvModal.show('confirmModalDanger');
+                            return
+                        }
+                        if (!item.id) {
+                            await this.insertQuotation(item);
+                            this.$bvModal.show('confirmModal');
+                        }
+                        else {
+                            await this.updateQuotation(item);
+                            this.$bvModal.show('confirmModal');
+                            item.quotation_items.sort(function (a, b) {
+                                return (a.rowNum < b.rowNum) ? -1 : 1;
+                            });
+                            console.log(item.quotation_items);
+                        }
+                    },
+                    insertQuotation: async function (item) {
+                        self = this;
+                        await axios.post("/v1/quotation", item)
+                            .then(function (response) {
+                                console.log(response);
+                                Vue.set(self.quotation, 'id', response.data.id)
+                                self.quotation.isInsert = false;
+                            });
+                        await self.getQuotation(self.quotation);
+                        localStorage.setItem('quotation', JSON.stringify(self.quotation));
+                        //self.countChanged = 0;
+                        app.title = '新規作成';
+                        app.message = '保存しました。';
+                        self.oldQuotation = { ...self.quotation };
+                    },
+                    updateQuotation: async function (item) {
+                        self = this;
+                        await axios.put("/v1/quotation/" + item.id, item)
+                            .then(function (response) {
+                                console.log(response);
+                            });
+                        await self.getQuotation(self.quotation);
+                        self.quotation.quotation_items.sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                        localStorage.setItem('quotation', JSON.stringify(self.quotation));
+                        self.oldQuotation = { ...self.quotation };
+                        //self.countChanged = 0;
+                        app.title = '更新';
+                        app.message = '保存しました。'
+
+                    },
+                    copyQuotation: async function (item) {
+                        let quotationResource = JSON.stringify(item);
+                        quotationResource = JSON.parse(quotationResource);  //参照渡し対策
+                        quotationResource.numberOfAttachments = 0;
+                        delete quotationResource.id;
+                        await this.insertQuotation(quotationResource);
+                        this.getQuotations();
+                    },
+                    convertQuotation: function (item) {
+                        let invoiceResource = JSON.stringify(item);
+                        invoiceResource = JSON.parse(invoiceResource);  //参照渡し対策
+                        let quotationResource = JSON.parse(localStorage.getItem('quotation'));  //isConvert更新用
+                        // invoiceResource.paymentDate = '';
+                        // invoiceResource.isPaid = false;
+                        invoiceResource.numberOfAttachments = 0;
+                        invoiceResource.invoice_items = item.quotation_items;
+                        delete invoiceResource.id;
+                        delete invoiceResource.expiry;
+                        delete invoiceResource.dayOfDelivery;
+                        delete invoiceResource.termOfSale;
+                        delete invoiceResource.isConvert;
+                        delete invoiceResource.quotation_items;
+                        quotationResource.isConvert = true;     //変換済みフラグ
+                        this.insertInvoice(invoiceResource);
+                        this.updateQuotation(quotationResource);
+                    },
+                    // axios.deleteは使わず、isDeleteをTrueに
+                    deleteQuotation: async function (item) {
+                        self = this;
+                        await axios.put("/v1/quotation_delete/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.quotation = '';
+                                self.getQuotations(self.searchQuotationWord);
+                            });
+                    },
+                    QuotationAddRow: function () {
+                        self = this;
+                        self.quotations.push({
+                            isInsert: true,
+                            quotation_items: [{ isDelete: false }, { isDelete: false }, { isDelete: false }, { isDelete: false }, { isDelete: false }],
+                        });
+                        self.quotation = self.quotations.slice(-1)[0];
+                        Vue.set(self.quotation, 'isTaxExp', true);
+                        Vue.set(self.quotation, 'tax', self.setting.defaultTax);
+                        localStorage.setItem('quotation', JSON.stringify(self.quotation));
+                        //this.countChanged = 0;
+                    },
+                    selectQuotation: function (item) {
+                        this.quotation = item;
+                        this.quotation.quotation_items = this.quotation.quotation_items.map(quotationItem => ({ ...quotationItem, isDelete: false }));
+                        this.oldQuotation = { ...item };
+                        this.getCustomer(this.quotation);  //PDF遅延のためにここでasyncなしで読んでおく
+                        console.log(this.quotation);
+                        this.quotation.quotation_items.sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                        localStorage.setItem('quotation', JSON.stringify(this.quotation));
+                        this.getFileListDZ();
+                        //this.countChanged = 0;
+                    },
+                    selectQuotationItem: function (item) {
+                        this.quotationItem = item;
+                        console.log(this.quotationItem);
+                    },
+                    getQuotation: async function (item) {
+                        self = this;
+                        await axios.get("/v1/quotation/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.quotation, key, value);
+                                }
+                                //this.countChanged = 0;
+                            });
+                    },
+                    addRowQuotationItem: function (data) {
+                        if (this.quotation.length === 0) {
+                            alert('見積書を選択してください');
+                            return;
+                        }
+                        this.quotation.quotation_items.splice(data.index + 1, 0, { quotationId: this.quotation.id, })
+                        this.quotation.quotation_items.map((item, index) => {
+                            item.rowNum = index;
+                        }).sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                    },
+                    removeRowQuotationItem: function (data) {
+                        if (this.quotation.length === 0) {
+                            alert('請求書を選択してください');
+                            return;
+                        }
+                        let index = this.quotation.quotation_items.findIndex((item) => item.rowNum === data.item.rowNum);
+                        this.quotation.quotation_items.splice(index, 1)
+                        this.quotation.quotation_items.map((item, index) => {
+                            item.rowNum = index;
+                        }).sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                    },
+                    insertInvoice: async function (item) {
+                        self = this;
+                        await axios.post("/invoice", item)
+                            .then(function (response) {
+                                console.log(response);
+                            });
+                    },
+                    getCustomers: async function () {
+                        self = this;
+                        await axios.get("/customers")
+                            .then(function (response) {
+                                console.log(response);
+                                self.customers = response.data;
+                            });
+                    },
+                    getCustomer: async function (item) {
+                        self = this;
+                        await axios.get("/customer/" + item.customerId)
+                            .then(function (response) {
+                                self.customer = response.data;
+                            });
+                    },
+                    getItems: async function () {
+                        self = this;
+                        await axios.get("/items")
+                            .then(function (response) {
+                                console.log(response);
+                                self.items = response.data;
+                            });
+                    },
+                    searchQuotation: function () {
+                        this.getQuotations(this.searchQuotationWord);
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    showMore: function () {
+                        this.offset += 100;
+                        this.getQuotations(this.searchQuotationWord, this.offset)
+                    },
+                    getUnits: async function () {
+                        self = this;
+                        await axios.get("/units")
+                            .then(function (response) {
+                                console.log(response);
+                                self.units = response.data.map(item => item['unitName']);
+                                self.units.unshift('');
+                            });
+                    },
+                    getCategories: async function () {
+                        self = this;
+                        await axios.get("/categories")
+                            .then(function (response) {
+                                console.log(response);
+                                self.categories = response.data.map(item => item['categoryName']);
+                                self.categories.unshift('')
+                            });
+                    },
+                    getMakers: async function () {
+                        self = this;
+                        await axios.get("/makers")
+                            .then(function (response) {
+                                console.log(response);
+                                self.makers = response.data.map(item => item['makerName']);
+                                self.makers.unshift('')
+                            });
+                    },
+                    getSetting: async function () {
+                        self = this;
+                        await axios.get("/setting")
+                            .then(function (response) {
+                                console.log(response);
+                                self.setting = response.data;
+                            });
+                    },
+                    coutFiles: function () {
+                        self = this;
+                        axios.get("/count-files/s/upload/quotes")
+                            .then(function (response) {
+                                console.log(response);
+                                self.countedFiles = response.data;
+                            });
+                    },
+                    modalShow: function (item, modalName) {
+                        this.quotation = item;
+                        console.log(this.quotation);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteQuotation(this.quotation);
+                        }
+                    },
+                    copyModalProcess(result) {
+                        this.$bvModal.hide('copyModal');
+                        if (result === true) {
+                            this.copyQuotation(this.quotation);
+                        }
+                    },
+                    convertModalProcess(result) {
+                        this.$bvModal.hide('convertModal');
+                        if (result === true) {
+                            this.convertQuotation(this.quotation);
+                        }
+                    },
+                    // 得意先名モーダル選択時
+                    customerSelect(record) {
+                        Vue.set(self.quotation, 'customerId', record.id);
+                        Vue.set(self.quotation, 'customerName', record.customerName);
+                        Vue.set(self.quotation, 'honorificTitle', record.honorificTitle);
+                        this.quotation.customerAnyNumber = record.anyNumber;
+                        this.$bvModal.hide("customer-modal");
+                    },
+                    // 商品名モーダル選択時
+                    itemSelect(record) {
+                        Vue.set(self.quotationItem, 'itemId', record.id);
+                        Vue.set(self.quotationItem, 'itemName', record.itemName);
+                        Vue.set(self.quotationItem, 'unit', record.unit);
+                        Vue.set(self.quotationItem, 'price', record.basePrice);
+                        Vue.set(self.quotationItem, 'cost', record.baseCost);
+                        this.$refs['items-modal'].hide()
+                    },
+                    // 商品名モーダル表示 モーダルのダブり表示防止
+                    showModalItems() {
+                        this.$refs['items-modal'].show()
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                    //商品個数小数点以下切り捨て
+                    formatter_count(value) {
+                        return Math.floor(value);
+                    },
+                    amountCalculation(quotation) {
+                        if (!quotation.quotation_items.length) return 0;
+                        let amount = quotation.quotation_items.map(item => item.count * Math.round(item.price)).reduce((a, b) => a + b);
+                        if (quotation.isTaxExp === true) return Math.round(amount * (1 + quotation.tax / 100));
+                        return amount;
+                    },
+                    //明細欄　原価
+                    costTotal: function (data) {
+                        return data.item.cost * data.item.count;
+                    },
+                    //明細欄　原価率
+                    costRate: function (data) {
+                        return data.item.cost / data.item.price;
+                    },
+                    //明細欄　粗利金額
+                    profit: function (data) {
+                        return (data.item.price * data.item.count) - (data.item.cost * data.item.count);
+                    },
+                    //---- upload funcrions --
+                    async getFileListDZ() {
+                        //this.quotation.numberOfAttachments = await this.getFileList(this.quotation.applyNumber);
+                        this.getFileList(this.quotation.applyNumber);
+                    },
+                    getFileList: async function (fid) {
+                        self = this;
+                        url = "list-files/s/upload/quotes/" + fid;
+                        flen = 0;
+                        await axios.get(url)
+                            .then(function (response) {
+                                console.log(response.data);
+                                self.dicFiles = response.data;
+                                self.countedFiles[fid] = self.dicFiles.length;
+                            })
+                        //return flen;
+                    },
+                    clearFileList: function () {
+                        this.dicFiles = {};
+                    },
+                    deleteFiles: async function (fid) {
+                        self = this;
+                        url = "delete-files/s";
+                        await axios.delete(url, {
+                            data: self.dicFiles
+                        }
+                        ).then(function (response) {
+                            console.log(response.data);
+                            self.getFileListDZ();
+                        });
+                    }, //-- end upload functions
+                    isDiffObject: function () {
+                        if (this.oldQuotation.length == 0 || this.quotation.length == 0) return false;
+                        if (JSON.stringify(this.oldQuotation) === JSON.stringify(this.quotation)) return false;
+                        else return true;
+                    },
+                    checkChange: async function () {
+                        isUpdate = false;
+                        if (this.isDiffObject()) {
+                            await this.$bvModal.msgBoxConfirm('未更新のデータがあります。', {
+                                okVariant: 'primary',
+                                okTitle: '保存して戻る',
+                                cancelVariant: 'danger',
+                                cancelTitle: '保存しないで戻る',
+                                noCloseOnBackdrop: true
+                            }).then(value => {
+                                if (value) isUpdate = true;
+                            });
+                            if (isUpdate) await this.bulkUpsert(this.quotation);
+                            this.getQuotations(this.searchQuotationWord);
+                        }
+                        if (!isUpdate || (isUpdate && this.quotation.customerId)) {
+                            router.push({ path: "?page=index" });
+                        }
+                    },
+                    pdfout: async function () {
+                        self = this;
+                        //await this.getCustomer(this.quotation)
+                        const sumQuotation = {
+                            sum: this.sum,
+                            taxAmount: this.taxAmount,
+                            priceIncludingTax: this.priceIncludingTax
+                        }
+                        const pdfData = getPdfDataQuotation(this.quotation, this.setting, sumQuotation, this.customer);
+                        await axios.post("/pdfmaker", pdfData)
+                            .then(function (response) {
+                                self.printPdf('/pdf/' + response.data)
+                            });
+                    },
+                    printPdf(url) {
+                        if (checkUserAgent() == 'pc') {
+                            printJS(url)
+                        } else {
+                            content = "<div class='iframe-wrapper' ><iframe src=" + url + " frameborder='0'></iframe></div>"
+                            this.modal.setContent(content);
+                            this.modal.open();
+                        }
+                    },
+                    openViewer: function (f) {
+                        //this.modal.setFooterContent(f.filename);
+                        content = ''
+                        if (f.type == 'pdf') {
+                            content = "<div class='iframe-wrapper' ><iframe src=" + f.url + " frameborder='0'></iframe></div>"
+                        } else if (f.type == 'csv') {
+                            content = "このファイルはViwerでは開けません";
+                        } else {
+                            content = "<img src=" + f.url + " width='100%'>"
+                        }
+                        this.modal.setContent(content);
+                        this.modal.open();
+                    },
+                    heightItemName: function (data) {
+                        if (!data) return "height: 31px";
+                        row = data.indexOf('\n') != -1 ? 2 : 1;
+                        interval = row > 1 ? 0 : 5;
+                        return "height: " + (26 * row + interval) + "px";
+                    },
+                },
+                mounted: function () {
+                    if (localStorage.getItem('quotation'))
+                        this.quotation = JSON.parse(localStorage.getItem('quotation'));
+                    this.getQuotations();
+                    this.getCustomers();
+                    this.getItems();
+                    this.getUnits();
+                    this.getCategories();
+                    this.getMakers();
+                    this.getSetting();
+                    this.coutFiles();
+                    document.querySelector('title').textContent = '見積書管理';
+                    if (this.pageName == 'show') {
+                        this.getFileListDZ();
+                    }
+                    this.modal = new tingle.modal({
+                        footer: false,
+                        stickyFooter: false,
+                        closeMethods: ['overlay', 'button', 'escape'],
+                        closeLabel: "Close",
+                    });
+                    this.quotation.quotation_items.sort(function (a, b) {
+                        return (a.rowNum < b.rowNum) ? -1 : 1;
+                    });
+                },
+                updated: function () {
+                    self = this;
+                    if ((this.routeFrom == 'index' || this.routeFrom == undefined) && (this.routeTo == 'show' || this.routeTo == 'store')) {
+                        this.routeFrom = 'show';
+                        this.routeTo = 'show';
+                        initDropzone();
+                    }
+                    if (this.pageName == 'show' && this.routeFrom == '' && this.routeTo == '') {
+                        initDropzone();
+                    }
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                    // 逐次、数量＊単価の合計をする
+                    sum: function () {
+                        if (typeof (this.quotation.quotation_items) == 'undefined') { return 0 } //初期立ち上がりでのエラー抑制
+                        let subTotal = this.quotation.quotation_items.map(quotation_item => parseInt(quotation_item.count * Math.round(quotation_item.price))).reduce(function (a, b) { return a + (isNaN(b) ? 0 : b) }, 0);
+                        if (this.quotation.isTaxExp) return subTotal;
+                        return parseInt(subTotal / (1 + this.quotation.tax / 100));
+                    },
+                    //消費税総額
+                    taxAmount: function () {
+                        if (typeof (this.quotation.quotation_items) == 'undefined') { return 0 } //初期立ち上がりでのエラー抑制
+                        if (this.quotation.isTaxExp)
+                            return Math.round(this.sum * (this.quotation.tax / 100));
+                        let subTotal = this.quotation.quotation_items.map(quotation_item => parseInt(quotation_item.count * Math.round(quotation_item.price))).reduce(function (a, b) { return a + (isNaN(b) ? 0 : b) }, 0);
+                        return subTotal - this.sum;
+                        // return Math.round(this.sum - this.sum / (1 + this.quotation.tax / 100));
+                    },
+                    //税込み総額
+                    priceIncludingTax: function () {
+                        if (typeof (this.quotation.quotation_items) == 'undefined') { return 0 } //初期立ち上がりでのエラー抑制
+                        if (this.quotation.isTaxExp)
+                            return Math.round(this.sum * (1 + this.quotation.tax / 100));
+                        return this.quotation.quotation_items.map(quotation_item => parseInt(quotation_item.count * Math.round(quotation_item.price))).reduce(function (a, b) { return a + (isNaN(b) ? 0 : b) }, 0);
+                        // return this.sum;
+                    },
+                    quotationsIndicateIndex: function () {
+                        let quotations = this.quotations;
+                        let amount = 0;
+                        if (this.quotationsShowValue === 'notConverted')
+                            quotations = quotations.filter(quotation => quotation.isConvert === false);
+                        if (this.quotationsShowValue === 'converted')
+                            quotations = quotations.filter(quotation => quotation.isConvert === true);
+                        let quotationAmounts = quotations.map(
+                            quotation => quotation.quotation_items.map(
+                                item => Math.round(item.count * Math.round(item.price) * (quotation.isTaxExp == true ? (1 + quotation.tax / 100) : 1))).reduce((a, b) => a + b));
+                        quotationAmounts.forEach(value => {
+                            amount += value;
+                        });
+                        this.quotationsIndicateCount = quotations.length;
+                        this.quotationsIndicateAmount = amount;
+                        return quotations;
+                    },
+                    // 得意先選択モーダルの検索機能
+                    searchCustomers: function () {
+                        let customers = this.customers;
+                        if (this.isShowAll === false)
+                            customers = customers.filter(customer => customer.isHide === false);
+                        if (this.isShowFavorite === true)
+                            customers = customers.filter(customer => customer.isFavorite === true);
+                        customers = customers.filter(customer => (customer.customerName?.includes(this.searchCustomerWord) || String(customer.id)?.includes(this.searchCustomerWord) ||
+                            String(customer.customerKana)?.includes(this.searchCustomerWord)));
+                        return customers;
+                    },
+                    // 商品選択モーダルの検索機能
+                    searchItems: function () {
+                        return this.items.filter(item => {
+                            return (searchFilter(item.itemName, this.searchItemWord) ||
+                                searchFilter(item.itemCode, this.searchItemWord) ||
+                                searchFilter(item.model, this.searchItemWord)) &&
+                                searchFilter(item.category, this.searchItemSelectCategory) &&
+                                searchFilter(item.maker, this.searchItemSelectMaker);
+                        });
+                    },
+                },
+                watch: {
+                    $route(to, from) { // パラメータの変更でドロップゾーンを初期化するため
+                        this.routeFrom = from.query.page;
+                        this.routeTo = to.query.page;
+                    }
+                }
+            })
+
+            function searchFilter(searchTarget, searchWord) {
+                if ((searchTarget === null && searchWord === '') || (searchTarget !== null && searchWord === '')) {
+                    return true;
+                }
+                if (searchTarget === null && searchWord !== '') {
+                    return false;
+                }
+                return searchTarget.includes(searchWord);
+            };
+
+            Dropzone.autoDiscover = false;
+            function destroyDrop() {
+                if (Dropzone.instances.length > 0) {
+                    Dropzone.instances.forEach((e) => {
+                        e.destroy();
+                    });
+                }
+            }
+            function initDropzone() {
+                Dropzone.autoDiscover = false;
+                console.log("init dropzone");
+                destroyDrop();
+                dropz = new Dropzone("#dropz", {
+                    dictDefaultMessage: '+',
+                    parallelUploads: 2,
+                    init: function () {
+                        this.on("complete", file => {
+                            console.log("complete A file has been added");
+                            this.removeFile(file);
+                            if (this.getUploadingFiles().length === 0 && this.getQueuedFiles().length === 0) {
+                                app.getFileListDZ();
+                            }
+                        });
+                    }
+                });
+            }
+            // end アップロード機能
+            // ユーザエージェントモードチェック（PCかスマホか）
+            function checkUserAgent() {
+                var ua = navigator.userAgent;
+                if (ua.indexOf('iPhone') > 0 || ua.indexOf('iPod') > 0 || ua.indexOf('Android') > 0 && ua.indexOf('Mobile') > 0) {
+                    return 'sm';
+                } else if (ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0) {
+                    return 'tb';
+                } else {
+                    return 'pc';
+                }
+            }
+
+        </script>
+
+        <% endblock %>

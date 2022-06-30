@@ -1,0 +1,421 @@
+<html>
+<style>
+    .trim-img {
+        object-fit: cover;
+    }
+</style>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+    <link href="images/favicon.ico" rel="shortcut icon">
+    -->
+<title>アップロード</title>
+<!-- Load required Bootstrap and BootstrapVue CSS -->
+
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+<!-- Load fontawesome -->
+<!-- link href="./css/all.css" rel="stylesheet" -->
+<!--load all styles -->
+<!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+<link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+<!-- Load polyfills to support older browsers -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+    crossorigin="anonymous"></script>
+
+<!-- Load Vue followed by BootstrapVue -->
+<script src="https://unpkg.com/vue@2.6.14/dist/vue.min.js"></script>
+<script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+<!-- Load the following for BootstrapVueIcons support -->
+<script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+    crossorigin="anonymous"></script>
+
+<!-- 各種便利なツール塁です必要なときに随時使用のこと
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.js"></script>
+    <script src="https://unpkg.com/vue-lazyload/vue-lazyload.js"></script>
+    <script src="./jsQR.js"></script>
+    <script src="https://cozmo.github.io/jsQR/jsQR.js"></script>
+    -->
+
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.16.0/tingle.min.js" integrity="sha512-2B9/byNV1KKRm5nQ2RLViPFD6U4dUjDGwuW1GU+ImJh8YinPU9Zlq1GzdTMO+G2ROrB5o1qasJBy1ttYz0wCug==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tingle/0.16.0/tingle.css" integrity="sha512-k6op6U+6fzScsVhxntLBg+Ob/Gv64fjNfjuAcNtbngRoi1LKf+aicRaEs3zeTrRuoIkOjGwLf9FR5BR7B3NItw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    .image-box {
+        position: relative;
+    }
+
+    .image-in-check {
+        width: 20px;
+        height: 20px;
+        color: #ffffff;
+        background-color: #2779bd;
+        display: flex;
+        /*justify-content: center;*/
+        /*align-items: center;*/
+        font-size: 1.5rem;
+        border-radius: 50%;
+        cursor: pointer;
+
+        position: absolute;
+        top:  15;
+        left: 10;
+    }
+
+    .file-list{
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .custom-file-label::after {
+        content: '+';
+    }
+
+    .tingle-modal {
+        background: rgba(0, 0, 0, .5);
+    }
+    .tingle-modal-box__content {
+        padding: 0;
+    }
+    .iframe-wrapper {
+        position: relative;
+        padding-bottom: 150%;
+        height: 0;
+        overflow: hidden;
+    }
+
+    .iframe-wrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+
+</style>
+
+
+<div id="app">
+
+    <h3>フォルダーIDを指定してください。</h3><br />
+    <b-form-input type="text" v-model="fileId"></b-form-input>
+    <b-button @click="getFileList(fileId)">読込</b-button>
+    <h2 class="mt-5">現在選択されているファイルは次のとおりです。</h2><br />
+    <div v-if="selectedImgUrl">
+        <img :src="selectedImgUrl" width="90" height="90" />
+    </div>
+    <div v-if="selectImgUrl">
+        <img :src="selectImgUrl" height="480" />
+        <b-button @click="selectedImgUrl=selectImgUrl">選択</b-button>
+    </div>
+    <div class="file-list">
+        <template v-for="f in dicFiles">
+                <b-card style="width: 10rem;" 
+                    :img-src= "'../'+f.thumbPath"
+                    img-top
+                    @click="selectImgUrl='../'+f.path"
+                >
+                    <b-card-text>{{f.filename}}</b-card-text>
+                    <!-- input type="checkbox" v-model="f.isSelect" class="image-in-check"> -->
+                </b-card>
+        </template>    
+    </div>
+    <h2 class="mt-5">現在登録されているファイルは次のとおりです。</h2><br />
+    <p>
+        <b-button @click="deleteFiles(fileId)">削除</b-button>
+    </p>
+    <div class="file-list">
+        <template v-for="f in dicFiles">
+                <b-card style="width: 10rem;" 
+                    :img-src= "'../'+f.thumbPath"
+                    img-top
+                >
+                    <b-card-text>{{f.filename}}</b-card-text>
+                    <input type="checkbox" v-model="f.isSelect" class="image-in-check"> 
+                </b-card>
+        </template>    
+    </div>
+
+    <h3 class="mt-5">アップロードファイル</h3><br />
+
+    <b-card style="max-width: 20rem">
+        <form action="upload-files/s/upload" class="dropzone" id="my-dropzone">
+            <input hidden type="text" name="fileId" v-model="fileId">
+
+            <input hidden type="file" name="file" id="my-dropzone" multiple>
+        </form>
+    </b-card>
+    <script>
+        Dropzone.options.myDropzone = { // camelized version of the `id`
+            dictDefaultMessage: 'ここにファイルをドロップしてね',
+            init: function () {
+                this.on("complete", file => {
+                    console.log("complete A file has been added");
+                    this.removeFile(file);
+                    app.getFileList(app.fileId);
+                });
+            }
+        };
+    </script>
+    <b-form @submit="uploadFile" >
+        <b-form-file
+            type="file"
+            v-model="form.file"
+            browse-text="+"
+            placeholder="Choose a file or drop it here..."
+            drop-placeholder="Drop file here..."
+            style="z-index: 0;"
+            
+        ></b-form-file>
+        <b-button type="submit" variant="primary" id="submitBtn">Submit</b-button>
+    </b-form>
+    <b-button @click="deleteFiles(fileId)">削除</b-button>
+    <h2 class="mt-5">ファイルリスト形式(for)</h2><br />
+    <div v-if="selectImgUrl">
+        <img :src="selectImgUrl" width="200" height="200" />
+    </div>
+    <div>
+        <b-table-simple hover small caption-top responsive>
+            <template v-for="f in dicFiles">
+                <b-tr>
+                    <b-td width="5%">
+                        <input type="checkbox" v-model="f.isSelect" size="sm"> 
+                    </b-td>
+                    <b-td width="10%">
+                        <div @click="selectImgUrl=f.url" >
+                            <b-img :src="f.urlThumb" width="90" fluid ></b-img>
+                        </div>
+                    </b-td>
+                    <b-td class="ml-5">{{f.filename}}</b-td>
+                </b-tr> 
+            </template>        
+        </b-table-simple>
+    </div>
+
+
+    <h2 class="mt-5">ファイルリスト形式(b-table)</h2><br />
+    <div class="file-list">
+
+        <b-table
+            :fields= "[
+                {key:'image' ,label:'image'},
+                {key:'filename' ,label:'file'}
+            ]"
+            :items= 'dicFiles'
+        > 
+            <template v-slot:cell(image)="data">
+                <b-img :src="data.item.thumbPath" width="90" @click="openViwer(data.item)"></b-img>
+            </template>
+        </b-table>
+    </div>
+
+    <b-button @click="modal.open()">modal open </b-button>
+
+
+    <br /><br />
+
+</div>
+
+<script>
+
+    Vue.filter('nf', function (val) {
+        return val.toLocaleString();
+    });
+
+    var app = new Vue({
+        el: '#app',
+        data: {
+            upDirPath: "upload",
+            isList: true,
+            dicFiles: [],
+            fileId: '001',
+            selectImgUrl: "",
+            selectedImgUrl: "",
+            form:{
+                file: '',
+                fileId:''
+            },
+            url: '',
+            //modal: null
+        },
+        methods: {
+            getFileList: async function (fid) {
+                self = this;
+                url = "list-files/s/" + self.upDirPath + "/" + fid;
+                await axios.get(url)
+                    .then(function (response) {
+                        console.log(response.data);
+                        self.dicFiles = response.data;  
+                    })
+            },
+            deleteFiles: async function (fid) {
+                self = this;
+                url = "delete-files/s";
+                await axios.delete(url, { 
+                    data:self.dicFiles
+                }
+                ).then(function (response) {
+                    console.log(response.data);
+                    self.getFileList(fid);
+                });
+            },
+            selectFile: async function(fid){
+                self = this;
+                for (f of self.dicFiles){
+                    if(f.isSelect){
+                        console.log("match:",f.path);
+                        self.selectImgUrl = f.path;
+                        break;
+                    }
+                }
+            },
+            preview: function(){
+
+            },
+            uploadFile: function(event){
+                self = this;
+                event.preventDefault();
+                //let files = event.target.files[0];
+                //let files = event.dataTranfer.files[0];
+                const formData = new FormData();
+                formData.append('file', this.form.file)
+                formData.append('fileId', this.fileId)
+
+                for (item of formData){
+                    console.log(item);
+                }                
+                //console.log(files);
+                
+                axios.post("upload-files/s/upload", formData)
+                .then((res) => {
+                    console.log(res)
+                    self.getFileList(self.fileId);
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            },
+            formUpload: function(){
+                form = document.getElementById('form-upload').submit()
+            },
+            openViwer: function(f){
+                this.modal.setFooterContent(f.filename);
+                content = ''
+                if(f.type == 'pdf'){    
+                    content = "<div class='iframe-wrapper' ><iframe src="+f.url+" frameborder='0'></iframe></div>"
+                }else if(f.type == 'csv'){    
+                    content = "<h3>このファイルはViwerでは開けません</h3>";
+                }else{
+                    content = "<img src="+f.url+" width='100%'>"
+                }
+            
+                this.modal.setContent(content);
+                this.modal.open();
+            }
+
+        },
+        mounted: function () {
+            this.getFileList('001');
+                // instanciate new modal
+            this.modal = new tingle.modal({
+                footer: true,
+                stickyFooter: false,
+                closeMethods: ['overlay', 'button', 'escape'],
+                closeLabel: "Close",
+                //cssClass: ['custom-class-1', 'custom-class-2'],
+                onOpen: function() {
+                        //console.log('modal open');
+                        //this.setContent('<h1>here\'s some content</h1>');
+                    },
+                onClose: function() {
+                    //console.log('modal closed');
+                },
+                beforeClose: function() {
+                    // here's goes some logic
+                    // e.g. save content before closing the modal
+                    return true; // close the modal
+                    return false; // nothing happens
+                },
+            });
+            //this.modal = modal;
+            // set content
+            //modal.setContent('<h1>here\'s some content</h1>');
+
+            // add a button
+            //modal.addFooterBtn('Button label', 'tingle-btn tingle-btn--primary', function() {
+                // here goes some logic
+            //    modal.close();
+            //});
+
+            // add another button
+            //modal.addFooterBtn('Dangerous action !', 'tingle-btn tingle-btn--danger', function() {
+                // here goes some logic
+            //    modal.close();
+            //});            
+
+        }
+    });
+
+/*
+    // instanciate new modal
+    var modal = new tingle.modal({
+        footer: true,
+        stickyFooter: false,
+        closeMethods: ['overlay', 'button', 'escape'],
+        closeLabel: "Close",
+        cssClass: ['custom-class-1', 'custom-class-2'],
+        onOpen: function() {
+            console.log('modal open');
+        },
+        onClose: function() {
+            console.log('modal closed');
+        },
+        beforeClose: function() {
+            // here's goes some logic
+            // e.g. save content before closing the modal
+            return true; // close the modal
+            return false; // nothing happens
+        }
+    });
+
+    // set content
+    modal.setContent('<h1>here\'s some content</h1>');
+
+    // add a button
+    modal.addFooterBtn('Button label', 'tingle-btn tingle-btn--primary', function() {
+        // here goes some logic
+        modal.close();
+    });
+
+    // add another button
+    modal.addFooterBtn('Dangerous action !', 'tingle-btn tingle-btn--danger', function() {
+        // here goes some logic
+        modal.close();
+    });
+
+    // open modal
+    //modal.open();
+
+    // close modal
+    //modal.close();
+*/
+</script>
+
+</html>

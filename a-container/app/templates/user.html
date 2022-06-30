@@ -1,0 +1,421 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .sm-mode {
+                display: none;
+            }
+
+            .pc-mode {
+                display: block;
+            }
+
+            @media screen and (max-width:690px) {
+                .sm-mode {
+                    display: block;
+                }
+
+                .pc-mode {
+                    display: none;
+                }
+            }
+
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #usertable td {
+                vertical-align: middle;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- ヘッダー -->
+                <b-card class="fixed-top header" style="background: rgba(255,255,255,0.5);">
+                    <b-row>
+                        <b-col></b-col>
+                        <b-col cols="11">
+                            <b-row>
+                                <b-col class="pc-mode">
+                                    <b-button href="/setting-page">会社情報</b-button>
+                                    <b-button href="/user-page">ユーザー</b-button>
+                                    <b-button href="/category-page">カテゴリ</b-button>
+                                    <b-button href="/maker-page">メーカー</b-button>
+                                    <b-button href="/unit-page">単位</b-button>
+                                    <b-button href="/dust-select-page">削除済み</b-button>
+                                </b-col>
+                                <b-col class="sm-mode">
+                                    <b-button href="/setting-page" v-b-tooltip.hover.top="'会社情報'">
+                                        <b-icon icon="building"></b-icon>
+                                    </b-button>
+                                    <b-button href="/user-page" v-b-tooltip.hover.top="'ユーザー登録'">
+                                        <b-icon icon="person-plus-fill"></b-icon>
+                                    </b-button>
+                                    <b-button href="/category-page" v-b-tooltip.hover.top="'カテゴリ登録'">
+                                        <b-icon icon="folder2"></b-icon>
+                                    </b-button>
+                                    <b-button href="/maker-page" v-b-tooltip.hover.top="'メーカー登録'">
+                                        <b-icon icon="shop"></b-icon>
+                                    </b-button>
+                                    <b-button href="/unit-page" v-b-tooltip.hover.top="'単位登録'">
+                                        <b-icon icon="hammer"></i>
+                                    </b-button>
+                                    <b-button href="/dust-select-page" v-b-tooltip.hover.top="'削除済み参照'">
+                                        <b-icon icon="file-earmark-x"></b-icon>
+                                    </b-button>
+                                </b-col>
+                                <b-col cols="3" class="text-right">
+                                    <b-button @click="$bvModal.show('login-history-modal')">ログ履歴</b-button>
+                                </b-col>
+                                <b-col cols="2" class="text-right">
+                                    <sc-menu v-if="modeName!='mw'"></sc-menu>
+                                </b-col>
+                            </b-row>
+                        </b-col>
+                        <b-col></b-col>
+                    </b-row>
+                </b-card>
+
+                <!-- ログイン履歴一覧モーダル -->
+                <b-modal size="xl" id="login-history-modal">
+                    <p>ログイン履歴</p>
+                    <b-table hover striped small sort-by="ID" id="login-history-table" :items="loginHistories"
+                        label="Table Options" :fields="[
+                              {  key: 'id', label: 'No.' },
+                              {  key: 'userName', label: 'ユーザー名' },
+                              {  key: 'modelName', label: '対象' },
+                              {  key: 'modelId', label: '対象ID' },
+                              {  key: 'action', label: '行動' },
+                              {  key: 'createdAt', label: '日時' },
+                        ]">
+                        <template v-slot:cell(createdAt)="data">
+                            {{formatDatetime(data.item.createdAt)}}
+                        </template>
+                    </b-table>
+                </b-modal>
+
+                <!-- 空行 -->
+                <b-row class="mb-5"></b-row>
+                <b-row class="mb-5"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row align-h="start">
+                            <router-link to="?page=store">
+                                <b-button variant="primary" id="new-button" class="mb-3 ml-3" @click="UserAddRow();">
+                                    ＋新規追加
+                                </b-button>
+                            </router-link>
+                        </b-row>
+                        <b-card border-variant="white" class="mb-3 text-center" header="ユーザー一覧"
+                            header-border-variant="light">
+                            <b-table responsive hover small id="usertable" sort-by="ID" small label="Table Options"
+                                :items=underAdministrator :sort-by.sync="sortByUsers" :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'anyNumber', label: 'No.', thClass: 'text-center', },
+                          {  key: 'name', label: 'ユーザー名', thClass: 'text-center', },
+                          {  key: 'password', label: 'パスワード', thClass: 'text-center', },
+                          {  key: 'group', label: 'グループ', thClass: 'text-center', },
+                          {  key: 'role', label: '権限', thClass: 'text-center', },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectUser(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                                <template v-slot:cell(password)="data">
+                                    {{ hidePassword(data.item.password) }}
+                                </template>
+                            </b-table>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(user.created_at)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(user.updated_at)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="ユーザー入力"
+                            header-border-variant="light">
+
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="任意番号(必須)"
+                                        label-for="anyNumber" label-align="right">
+                                        <b-form-input v-model="user.anyNumber" id="anyNumber" size="sm"
+                                            :formatter="formatterNumberAll">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="任意名(必須)"
+                                        label-for="anyName" label-align="right">
+                                        <b-form-input v-model="user.anyName" id="anyName" size="sm"
+                                            :formatter="formatter_delete_space">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="ユーザー名(必須)"
+                                        label-for="name" label-align="right">
+                                        <b-form-input v-model="user.name" id="name" size="sm"
+                                            :formatter="formatter_delete_space"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="パスワード(必須)"
+                                        label-for="password" label-align="right">
+                                        <b-form-input v-model="user.password" id="password" size="sm" type="password"
+                                            :formatter="formatter_delete_space">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="グループ"
+                                        label-for="group" label-align="right">
+                                        <b-form-input v-model="user.group" id="group" size="sm"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="権限"
+                                        label-for="role" label-align="right">
+                                        <b-form-select v-model="user.role" size="sm" :options="[
+                                        {  value: 'admin', text: 'admin' },
+                                        {  value: 'user', text: 'user' },
+                                        ]">
+                                        </b-form-select>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+
+            </div>
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <router-link to="?page=index">
+                            <b-button @click="getUsers();" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                        </router-link>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="bulkUpsert(user);">保存
+                        </b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(user,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+            <!-- エラーモーダル -->
+            <confirm-modal-danger :title="title" :message="message">
+            </confirm-modal-danger>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    sortByUsers: 'anyNumber',
+                    users: [],               //全件user
+                    user: [],                //選択中のuser
+                    loginHistories: [],
+                    title: '',
+                    message: '',
+                },
+                methods: {
+                    // ---Items---
+                    getUsers: async function () {
+                        self = this;
+                        await axios.get("/users")
+                            .then(function (response) {
+                                console.log(response);
+                                self.users = response.data;
+                            });
+                    },
+                    getLoginHistories: async function () {
+                        self = this;
+                        await axios.get("/login-histories")
+                            .then(function (response) {
+                                console.log(response);
+                                self.loginHistories = response.data;
+                            });
+                    },
+                    bulkUpsert(item) {
+                        if (!item.id) {
+                            this.insertUser(item);
+                        }
+                        else {
+                            this.updateUser(item);
+                        }
+                    },
+                    insertUser: async function (item) {
+                        self = this;
+                        await axios.post("/user", item)
+                            .then(function (response) {
+                                Vue.set(self.user, 'id', response.data.id)
+                                self.getUsers();
+                                self.user.isInsert = false;
+                                app.title = '新規作成';
+                                app.message = '保存しました';
+                                app.$bvModal.show('confirmModal');
+                            })
+                            .catch(function (error) {
+                                app.title = 'エラー';
+                                app.message = error.response.data.message;
+                                app.$bvModal.show('confirmModalDanger');
+                                console.log(error);
+                            });
+                    },
+                    updateUser: async function (item) {
+                        self = this;
+                        await axios.put("/user/" + item.id, item)
+                            .then(function (response) {
+                                self.getUsers();
+                                console.log(response);
+                                app.title = '更新';
+                                app.message = '保存しました';
+                                app.$bvModal.show('confirmModal');
+                            })
+                            .catch(function (error) {
+                                app.title = 'エラー';
+                                app.message = error.response.data.message;
+                                app.$bvModal.show('confirmModalDanger');
+                                console.log(error);
+                            });
+                    },
+                    deleteUser: async function (item) {
+                        self = this;
+                        await axios.delete("/user/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.user = '';
+                                self.getUsers();
+                            });
+                    },
+                    UserAddRow: function () {
+                        self = this;
+                        self.users.push({
+                            isInsert: true,
+                        });
+                        self.user = self.users.slice(-1)[0];
+                        localStorage.setItem('user', JSON.stringify(self.user))
+                    },
+                    selectUser: function (item) {
+                        this.user = item;
+                        console.log(this.user);
+                        localStorage.setItem('user', JSON.stringify(item))
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    modalShow: function (item, modalName) {
+                        this.user = item;
+                        console.log(this.user);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteUser(this.user);
+                        }
+                    },
+                    //スペース消去
+                    formatter_delete_space(value) {
+                        return value.replace(/\s+/g, "");
+                    },
+                    //整数意外禁止
+                    formatterNumberAll(value) {
+                        return value.replace(/\D/g, '');
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                    formatDatetime(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD HH:mm:ss");
+                    },
+                    hidePassword(word) {
+                        let password = String(word);
+                        let hideWord = '';
+                        for (let i = 0; i < password.length; i++) {
+                            hideWord = hideWord + '●';
+                            if (i >= 7) {
+                                break;
+                            }
+                        }
+                        return hideWord;
+                    },
+                },
+                mounted: function () {
+                    if (localStorage.getItem('user'))
+                        this.user = JSON.parse(localStorage.getItem('user'));
+                    this.getUsers();
+                    this.getLoginHistories();
+                    document.querySelector('title').textContent = 'ユーザー管理';
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                    underAdministrator() {
+                        let users = this.users;
+                        users = users.filter(user => user.role !== 'crescom_support');
+                        return users;
+                    }
+                }
+            })
+
+        </script>
+
+        <% endblock %>

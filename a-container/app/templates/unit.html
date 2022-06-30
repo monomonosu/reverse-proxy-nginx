@@ -1,0 +1,266 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .sm-mode {
+                display: none;
+            }
+
+            .pc-mode {
+                display: block;
+            }
+
+            @media screen and (max-width:690px) {
+                .sm-mode {
+                    display: block;
+                }
+
+                .pc-mode {
+                    display: none;
+                }
+            }
+
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #unittable td {
+                vertical-align: middle;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- ヘッダー -->
+                <setting-header :mode-name="modeName"></setting-header>
+
+                <!-- 空行 -->
+                <b-row class="mb-5"></b-row>
+                <b-row class="mb-5"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-card border-variant="white" class="mb-3 text-center" header="単位一覧"
+                            header-border-variant="light">
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="UnitAddRow();">
+                                        ＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <b-table responsive hover small id="unittable" sort-by="ID" small label="Table Options"
+                                :items=units :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'id', label: 'No.', thClass: 'text-center', tdClass: 'text-center', },
+                          {  key: 'unitName', label: '単位名', thClass: 'text-center', tdClass: 'text-center', },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectUnit(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                            </b-table>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(unit.createdAt)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(unit.updatedAt)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="単位入力"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="単位名"
+                                        label-for="unitName" label-align="right">
+                                        <b-form-input v-model="unit.unitName" id="unitName" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <router-link to="?page=index">
+                            <b-button @click="getUnits();" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                        </router-link>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="modalShow(unit,'upsertModal');">保存
+                        </b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(unit,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 保存モーダル -->
+            <div>
+                <select-modal modal-name='upsertModal' modal-message='保存しますか？'
+                    @selected="upsertModalProcess($event);" />
+            </div>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    units: [],               //全件unit
+                    unit: [],                //選択中のunit
+                },
+                methods: {
+                    // ---Units---
+                    getUnits: async function () {
+                        self = this;
+                        await axios.get("/units")
+                            .then(function (response) {
+                                console.log(response);
+                                self.units = response.data;
+                            });
+                    },
+                    bulkUpsert(item) {
+                        if (!item.id) {
+                            this.insertUnit(item);
+                        }
+                        else {
+                            this.updateUnit(item);
+                        }
+                    },
+                    insertUnit: async function (item) {
+                        self = this;
+                        await axios.post("/unit", item)
+                            .then(function (response) {
+                                Vue.set(self.unit, 'id', response.data.id)
+                                self.getUnits();
+                                self.unit.isInsert = false;
+                            });
+                    },
+                    updateUnit: async function (item) {
+                        self = this;
+                        await axios.put("/unit/" + item.id, item)
+                            .then(function (response) {
+                                self.getUnits();
+                                console.log(response);
+                            });
+                    },
+                    deleteUnit: async function (item) {
+                        self = this;
+                        await axios.delete("/unit/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.unit = '';
+                                self.getUnits();
+                            });
+                    },
+                    UnitAddRow: function () {
+                        self = this;
+                        self.units.push({
+                            isInsert: true,
+                        });
+                        self.unit = self.units.slice(-1)[0];
+                        localStorage.setItem('unit', JSON.stringify(self.unit)) //リロードのためのストア
+                    },
+                    selectUnit: function (item) {
+                        this.unit = item;
+                        console.log(this.unit);
+                        localStorage.setItem('unit', JSON.stringify(item)) //リロードのためのストア
+                    },
+                    getUnit: async function (item) {
+                        self = this;
+                        await axios.get("/unit/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.unit, key, value);
+                                }
+                            });
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    modalShow: function (item, modalName) {
+                        this.unit = item;
+                        console.log(this.unit);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteUnit(this.unit);
+                        }
+                    },
+                    upsertModalProcess(result) {
+                        this.$bvModal.hide('upsertModal');
+                        if (result === true) {
+                            this.bulkUpsert(this.unit);
+                        }
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                },
+                mounted: function () {
+                    if (localStorage.getItem('unit'))
+                        this.unit = JSON.parse(localStorage.getItem('unit')); //リロードのためのレストア
+                    this.getUnits();
+                    document.querySelector('title').textContent = '単位管理';
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+
+        </script>
+        <% endblock %>

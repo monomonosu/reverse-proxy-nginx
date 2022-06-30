@@ -1,0 +1,265 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .sm-mode {
+                display: none;
+            }
+
+            .pc-mode {
+                display: block;
+            }
+
+            @media screen and (max-width:690px) {
+                .sm-mode {
+                    display: block;
+                }
+
+                .pc-mode {
+                    display: none;
+                }
+            }
+
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #makertable td {
+                vertical-align: middle;
+            }
+        </style>
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- ヘッダー -->
+                <setting-header :mode-name="modeName"></setting-header>
+
+                <!-- 空行 -->
+                <b-row class="mb-5"></b-row>
+                <b-row class="mb-5"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-card border-variant="white" class="mb-3 text-center" header="メーカー一覧"
+                            header-border-variant="light">
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="MakerAddRow();">
+                                        ＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <b-table responsive hover small id="makertable" sort-by="ID" small label="Table Options"
+                                :items=makers :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'id', label: 'No.', thClass: 'text-center', tdClass: 'text-center', },
+                          {  key: 'makerName', label: 'メーカー名', thClass: 'text-center', tdClass: 'text-center', },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectMaker(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                            </b-table>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(maker.createdAt)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(maker.updatedAt)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="メーカー入力"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="メーカー名"
+                                        label-for="makerName" label-align="right">
+                                        <b-form-input v-model="maker.makerName" id="makerName" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <router-link to="?page=index">
+                            <b-button @click="getMakers();" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                        </router-link>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="modalShow(maker,'upsertModal');">保存
+                        </b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(maker,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 保存モーダル -->
+            <div>
+                <select-modal modal-name='upsertModal' modal-message='保存しますか？'
+                    @selected="upsertModalProcess($event);" />
+            </div>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    makers: [],               //全件maker
+                    maker: [],                //選択中のmaker
+                },
+                methods: {
+                    // ---Makers---
+                    getMakers: async function () {
+                        self = this;
+                        await axios.get("/makers")
+                            .then(function (response) {
+                                console.log(response);
+                                self.makers = response.data;
+                            });
+                    },
+                    bulkUpsert(item) {
+                        if (!item.id) {
+                            this.insertMaker(item);
+                        }
+                        else {
+                            this.updateMaker(item);
+                        }
+                    },
+                    insertMaker: async function (item) {
+                        self = this;
+                        await axios.post("/maker", item)
+                            .then(function (response) {
+                                Vue.set(self.maker, 'id', response.data.id)
+                                self.getMakers();
+                                self.maker.isInsert = false;
+                            });
+                    },
+                    updateMaker: async function (item) {
+                        self = this;
+                        await axios.put("/maker/" + item.id, item)
+                            .then(function (response) {
+                                self.getMakers();
+                                console.log(response);
+                            });
+                    },
+                    deleteMaker: async function (item) {
+                        self = this;
+                        await axios.delete("/maker/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.maker = '';
+                                self.getMakers();
+                            });
+                    },
+                    MakerAddRow: function () {
+                        self = this;
+                        self.makers.push({
+                            isInsert: true,
+                        });
+                        self.maker = self.makers.slice(-1)[0];
+                        localStorage.setItem('maker', JSON.stringify(self.maker))
+                    },
+                    selectMaker: function (item) {
+                        this.maker = item;
+                        console.log(this.maker);
+                        localStorage.setItem('maker', JSON.stringify(item))
+                    },
+                    getMaker: async function (item) {
+                        self = this;
+                        await axios.get("/maker/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.maker, key, value);
+                                }
+                            });
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    modalShow: function (item, modalName) {
+                        this.maker = item;
+                        console.log(this.maker);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteMaker(this.maker);
+                        }
+                    },
+                    upsertModalProcess(result) {
+                        this.$bvModal.hide('upsertModal');
+                        if (result === true) {
+                            this.bulkUpsert(this.maker);
+                        }
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                },
+                mounted: function () {
+                    if (localStorage.getItem('maker'))
+                        this.maker = JSON.parse(localStorage.getItem('maker'));
+                    this.getMakers();
+                    document.querySelector('title').textContent = 'メーカー管理';
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+
+        </script>
+        <% endblock %>

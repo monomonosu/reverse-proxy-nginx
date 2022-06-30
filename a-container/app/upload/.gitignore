@@ -1,0 +1,6 @@
+/__pycache__
+/migrations
+*.db
+*.db-journal
+upload/
+*.pyc

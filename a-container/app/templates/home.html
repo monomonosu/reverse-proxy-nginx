@@ -1,0 +1,58 @@
+<% extends "head.html" %>
+    <% block content %>
+        <div id="app" v-cloak>
+            <b-row class="bg pt-2 pb-2">
+                <b-col class="h5 mt-2 mt-2"><a href='#'><img src='images/crescom_logo_-_300px.jpg' width='40'
+                            class='mr-2'></a>トップ</b-col>
+                <b-col class="text-right mr-5 mt-3">
+                    <!-- サイドバー -->
+                    <sc-menu></sc-menu>
+                </b-col>
+            </b-row>
+
+            <b-row class="mt-5">
+                <b-col></b-col>
+                <b-col cols="4">
+                    <!-- TODO:アップロードした会社ロゴを表示するように変更する -->
+                    <b-img src="https://free-materials.com/adm/wp-content/uploads/2020/10/logo_07-1024x1024.png"
+                        style="width: 100%; height: 100%;"></b-img>
+                </b-col>
+                <b-col></b-col>
+            </b-row>
+
+            <b-row>
+                <b-col cols="1"></b-col>
+                <b-col cols="10">
+                    <b-row>
+                        <b-col>
+                            <b-button variant="info" href="/setting-page"><i class="fas fa-cog"></i> 各種設定画面</b-button>
+                            <b-button variant="info" href="/mw">マルチウィンドウ</b-button>
+                        </b-col>
+                        <b-col class="text-right">
+                            <p>Soho-Caddie</p>
+                        </b-col>
+                    </b-row>
+                </b-col>
+                <b-col cols="1"></b-col>
+            </b-row>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = 'SohoCaddie|Home';
+                    localStorage.setItem('wMode','tb');
+                }
+            })
+
+
+        </script>
+
+        <% endblock %>

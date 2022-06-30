@@ -1,0 +1,645 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #customertable>thead>tr>th {
+                pointer-events: none;
+            }
+
+            .th-any-number {
+                pointer-events: auto !important;
+            }
+
+            .th-closing-month {
+                pointer-events: auto !important;
+                width: 70px;
+            }
+
+            #customertable td {
+                vertical-align: middle;
+            }
+
+            .td-customerName {
+                width: 170px;
+            }
+
+            .td-postNumber {
+                width: 80px;
+            }
+
+            .td-telNumber {
+                width: 120px;
+            }
+        </style>
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- 空行 -->
+                <b-row class="mb-3"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col></b-col>
+                            <b-col class="text-right">
+                                <sc-menu class="mb-3" v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                        <b-card border-variant="white" class="mb-3 text-center" header="得意先一覧"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-input-group>
+                                        <b-form-input v-model="searchCustomerWord" id="searchCustomerWord" size="sm"
+                                            placeholder="🔍　No. or 得意先名 or 得意先カナ">
+                                        </b-form-input>
+                                        <b-input-group-append>
+                                            <b-button variant="primary" size="sm" @click="searchCustomer">検索</b-button>
+                                        </b-input-group-append>
+                                    </b-input-group>
+                                </b-col>
+                                <b-col sm></b-col>
+                                <b-col class="text-right">
+                                    <b-col sm class="text-left">
+                                        <b-form-group label-cols="4" label-cols-lg="4" label-size="sm"
+                                            label-align="right" label="　　">
+                                            <b-form-select v-model="customersShowValue" :options="[
+                                            {value:'',text:''},
+                                            {value:'all',text:'すべて表示'},
+                                            {value:'favorite',text:'お気に入り'},
+                                            ]" size="sm">
+                                            </b-form-select>
+                                        </b-form-group>
+                                    </b-col>
+                                </b-col>
+                            </b-row>
+                            <b-row align-h="end">
+                                <p class="mr-3">表示件数 {{customersIndicateCount}}件</p>
+                            </b-row>
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="CustomerAddRow();">＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <!-- ヘッダーをクリックするとソートが解除されるバグ解消のために、ソート可能なth以外はクリック無効にしているので注意 -->
+                            <b-table responsive hover small id="customertable" sort-by="ID" small label="Table Options"
+                                :items=customersIndicateIndex :sort-by.sync="sortByCustomers" :fields="[
+                      {  key: 'update', label: '' },
+                      {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                      {  key: 'anyNumber', label: 'No.', sortable: true, thClass:'th-any-number' },
+                      {  key: 'customerName', label: '得意先名', tdClass:'td-customerName', thClass: 'text-center', },
+                      {  key: 'closingMonth', label: '決算月', tdClass:'text-center', thClass: 'th-closing-month', sortable:true, },
+                      {  key: 'postNumber', label: '郵便番号', tdClass:'td-postNumber', thClass: 'text-center', },
+                      {  key: 'addressCombine', label: '住所', thClass: 'text-center', },
+                      {  key: 'telNumber', label: '電話番号', tdClass:'td-telNumber', thClass: 'text-center', },
+                      {  key: 'memo', label: 'メモ', thClass: 'text-center', },
+                    ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectCustomer(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                                <template v-slot:cell(addressCombine)="data">
+                                    {{combineAddress(data.item.address,data.item.addressSub)}}
+                                </template>
+                                <template v-slot:cell(memo)="data">
+                                    {{formatMemo(data.item.memo)}}
+                                </template>
+                            </b-table>
+                            <b-row align-h="end">
+                                <b-button v-if="isMore" variant="primary" size="sm" @click="showMore">さらに表示</b-button>
+                            </b-row>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(customer.createdAt)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(customer.updatedAt)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="得意先情報"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col lg>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="No.(必須)"
+                                        label-for="anyNumber" label-align="right">
+                                        <b-form-input v-model="customer.anyNumber" id="anyNumber" size="sm"
+                                            :formatter="formatterNumberAll" autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="決算月"
+                                        label-for="closingMonth" label-align="right">
+                                        <b-form-select v-model="customer.closingMonth" :options="closingMonth"
+                                            size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="得意先名"
+                                        label-for="customerName" label-align="right">
+                                        <b-form-input v-model="customer.customerName" id="customerName" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="敬称"
+                                        label-for="honorificTitle" label-align="right">
+                                        <b-form-select v-model="customer.honorificTitle" :options="selectHonorificTitle"
+                                            size="sm"></b-form-select>
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="フリガナ"
+                                        label-for="customerKana" label-align="right">
+                                        <b-form-input id="input-live" v-model="customer.customerKana"
+                                            :state="customerKanaValidate"
+                                            aria-describedby="input-live-help input-live-feedback" trim></b-form-input>
+                                        <b-form-invalid-feedback id="input-live-feedback">
+                                            全角カナまたは英数字で入力してください。
+                                        </b-form-invalid-feedback>
+                                        <b-form-text id="input-live-help">※全角カナ・英数字で入力(例)jマート1</b-form-text>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="部署"
+                                        label-for="department" label-align="right">
+                                        <b-form-input v-model="customer.department" id="department" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="郵便番号"
+                                        label-for="postNumber" label-align="right">
+                                        <b-form-input v-model="customer.postNumber" id="postNumber" size="sm"
+                                            autocomplete="off" :formatter="formatter_postNum">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="住所1"
+                                        label-for="address" label-align="right">
+                                        <b-form-input v-model="customer.address" id="address" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="住所2"
+                                        label-for="address" label-align="right">
+                                        <b-form-input v-model="customer.addressSub" id="address" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="電話番号"
+                                        label-for="telNumber" label-align="right">
+                                        <b-form-input v-model="customer.telNumber" id="telNumber" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="FAX番号"
+                                        label-for="faxNumber" label-align="right">
+                                        <b-form-input v-model="customer.faxNumber" id="faxNumber" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="サイトURL"
+                                        label-for="url" label-align="right">
+                                        <b-form-input v-model="customer.url" id="url" size="sm" autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="email"
+                                        label-for="email" label-align="right">
+                                        <b-form-input v-model="customer.email" id="email" size="sm" autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="代表者名"
+                                        label-for="representative" label-align="right">
+                                        <b-form-input v-model="customer.representative" id="representative" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="担当者"
+                                        label-for="manager" label-align="right">
+                                        <b-form-input v-model="customer.manager" id="manager" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="お客様区分"
+                                        label-for="customerCategory" label-align="right">
+                                        <b-form-radio-group required v-if="" v-model="customer.customerCategory"
+                                            id="customerCategory" :options="[
+                                            {  text: '法人', value: 'corporation' },
+                                            {  text: '個人', value: 'individual' },
+                                            ]"></b-form-radio-group>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="非表示"
+                                        label-for="isHide" label-align="right">
+                                        <b-form-checkbox v-model="customer.isHide"></b-form-checkbox>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="お気に入り"
+                                        label-for="isFavorite" label-align="right">
+                                        <div v-if="customer.isFavorite===true">
+                                            <a href="#" style="text-decoration: none;color:#fed11d;padding: 0 7px 0 0;"
+                                                @click="changeIsFavorite(customer.isFavorite);">
+                                                <b-icon icon="star-fill"></b-icon>
+                                            </a>
+                                        </div>
+                                        <div v-else>
+                                            <a href="#" style="text-decoration: none;color:#000000;padding: 0 7px 0 0;"
+                                                @click="changeIsFavorite(customer.isFavorite);">
+                                                <b-icon icon="star"></b-icon>
+                                            </a>
+                                        </div>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="メモ"
+                                        label-for="memo" label-align="right">
+                                        <b-form-textarea v-model="customer.memo" size="sm" rows="4">
+                                        </b-form-textarea>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col lg>
+                                    <b-table responsive hover small id="invoicetable" label="Table Options"
+                                        :items=invoices sticky-header style="max-height: 500px;" :fields="[
+                                            {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                                            {  key: 'applyNumber', label: '請求番号', thClass: 'text-center', tdClass: 'text-center' },
+                                            {  key: 'applyDate', label: '日付', thClass: 'th-apply-date text-center', tdClass: 'text-center', sortable: true },
+                                            {  key: 'customerAnyNumber', label: 'No.', thClass: 'th-customer-any-number text-center', tdClass: 'text-center', sortable: true },
+                                            {  key: 'customerName', label: '得意先名', thClass: 'text-center', },
+                                            {  key: 'title', label: '件名', thClass: 'text-center', },
+                                            {  key: 'totalAmount', label: '請求金額', thClass: 'text-center', tdClass: 'text-right' },
+                                            ]" :tbody-tr-class="rowClass">
+                                        <template v-slot:cell(applyDate)="data">
+                                            {{formatDate(data.item.applyDate)}}
+                                        </template>
+                                        <template v-slot:cell(totalAmount)="data">
+                                            {{amountCalculation(data.item)|nf}}
+                                        </template>
+                                    </b-table>
+                                    <b-row align-h="end">
+                                        <b-button v-if="isMoreInvoices" variant="primary" size="sm"
+                                            @click="showMoreInvoices">さらに表示</b-button>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <b-button @click="checkChange" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="apply();">保存</b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(customer,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message">
+            </confirm-modal>
+
+            <!-- バリデーションエラーモーダル -->
+            <confirm-modal-danger :title="title" :message="message">
+            </confirm-modal-danger>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            })
+
+            Vue.filter('nf', function (val) {
+                if (isNaN(val)) return null
+                return val.toLocaleString();
+            });
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    sortByCustomers: 'anyNumber',
+                    searchCustomerWord: '',     //得意先検索
+                    customersShowValue: '',     //得意先検索
+                    customersIndicateCount: 0,  //得意先検索
+                    customers: [],               //全件customer
+                    customer: [],                //選択中のcustomer
+                    oldCustomer: [],                //選択中の元customer
+                    invoices: [],
+                    selectHonorificTitle: ['', '様', '御中', '殿',],    //敬称セレクトボックス用
+                    closingMonth: [{ value: null, text: "" }, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                    title: '',
+                    message: '',
+                    offset: 0,
+                    isMore: false,
+                    offsetInvoices: 0,          //編集画面横の請求一覧用
+                    isMoreInvoices: false,      //編集画面横の請求一覧用
+                },
+                methods: {
+                    // ---Customers---
+                    getCustomers: async function (searchWord = '', offset = 0) {
+                        self = this;
+                        url = "/v1/customers"
+                        await axios.get(url, {
+                            params: {
+                                search: searchWord,
+                                offset: offset,
+                                moreCheck: true,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                if (offset == 0) {
+                                    self.offset = 0;
+                                    self.customers = response.data.customers;
+                                    self.isMore = response.data.isMore;
+                                }
+                                else {
+                                    response.data.customers.map(customer => self.customers.push(customer));
+                                    self.isMore = response.data.isMore;
+                                }
+                            });
+                    },
+                    //                    getCustomersSearch: async function (item) {
+                    //                        self = this;/f
+                    //                        await axios.get("/customers/search/" + item)
+                    //                            .then(function (response) {
+                    //                                console.log(response);
+                    //                                self.customers = response.data;
+                    //                            });
+                    //                    },
+                    bulkUpsert(item) {
+                        if (!item.id) {
+                            this.insertCustomer(item);
+                        }
+                        else {
+                            this.updateCustomer(item);
+                        }
+                    },
+                    insertCustomer: async function (item) {
+                        self = this;
+                        await axios.post("/v1/customer", item)
+                            .then(function (response) {
+                                Vue.set(self.customer, 'id', response.data.id)
+                                self.customer.isInsert = false;
+                                //self.getCustomer(self.customer);
+                                localStorage.setItem('customer', JSON.stringify(self.customer));
+                                app.title = '新規作成';
+                                app.message = '保存しました。';
+                                app.$bvModal.show('confirmModal');
+                            })
+                            .catch(function (error) {
+                                app.title = 'エラー';
+                                app.message = error.response.data.message;
+                                app.$bvModal.show('confirmModalDanger');
+                                console.log(error);
+                                return;
+                            });
+                        await self.getCustomer(self.customer)
+                        self.oldCustomer = { ...self.customer };
+
+                    },
+                    updateCustomer: async function (item) {
+                        self = this;
+                        await axios.put("/v1/customer/" + item.id, item)
+                            .then(function (response) {
+                                console.log(response);
+                                //self.getCustomer(self.customer)
+                                localStorage.setItem('customer', JSON.stringify(self.customer));
+                                app.title = '更新';
+                                app.message = '保存しました。'
+                                app.$bvModal.show('confirmModal');
+                            })
+                            .catch(function (error) {
+                                app.title = 'エラー';
+                                app.message = error.response.data.message;
+                                app.$bvModal.show('confirmModalDanger');
+                                console.log(error);
+                                return;
+                            });
+                        await self.getCustomer(self.customer)
+                        self.oldCustomer = { ...self.customer };
+                    },
+                    deleteCustomer: async function (item) {
+                        self = this;
+                        await axios.delete("/v1/customer/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.customer = '';
+                                self.getCustomers(self.searchCustomerWord);
+                            });
+                    },
+                    CustomerAddRow: function () {
+                        self = this;
+                        self.customers.push({
+                            isInsert: true,
+                            customerKana: "",
+                        });
+                        self.customer = self.customers.slice(-1)[0];
+                        localStorage.setItem('customer', JSON.stringify(self.customer))
+                    },
+                    selectCustomer: function (item) {
+                        this.customer = item;
+                        this.oldCustomer = { ...item };
+                        console.log(this.customer);
+                        localStorage.setItem('customer', JSON.stringify(item))
+                    },
+                    getCustomer: async function (item) {
+                        self = this;
+                        await axios.get("/v1/customer/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.customer, key, value);
+                                }
+                            });
+                    },
+                    searchCustomer: function () {
+                        this.getCustomers(this.searchCustomerWord);
+                    },
+                    getInvoices: async function (searchWord = '', offset = 0) {
+                        self = this;
+                        url = '/v1/invoices'
+                        await axios.get(url, {
+                            params: {
+                                search: searchWord,
+                                offset: offset,
+                                moreCheck: true,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                if (offset == 0) {
+                                    self.offset = 0;
+                                    self.invoices = response.data.invoices;
+                                    self.isMoreInvoices = response.data.isMore;
+                                }
+                                else {
+                                    response.data.invoices.map(invoice => self.invoices.push(invoice));
+                                    self.isMoreInvoices = response.data.isMore;
+                                }
+                            });
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    showMore: function () {
+                        // テスト的に300に
+                        this.offset += 300;
+                        this.getCustomers(this.searchCustomerWord, this.offset)
+                    },
+                    showMoreInvoices: function () {
+                        // テスト的に300に
+                        this.offsetInvoices += 300;
+                        this.getInvoices('', this.offsetInvoices);
+                    },
+                    apply: function () {
+                        if (this.customerKanaValidate === true) {
+                            this.bulkUpsert(this.customer);
+                        }
+                        else {
+                            this.title = 'エラー';
+                            this.message = 'フリガナを正しく入力してください。';
+                            this.$bvModal.show('confirmModalDanger');
+                        }
+                    },
+                    modalShow: function (item, modalName) {
+                        this.customer = item;
+                        console.log(this.customer);
+                        this.$bvModal.show(modalName);
+                    },
+                    hideResultModal: function (modalName) {
+                        this.$refs[modalName].hide();
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteCustomer(this.customer);
+                        }
+                    },
+                    amountCalculation(invoice) {
+                        if (!invoice.invoice_items.length) return 0;
+                        let amount = invoice.invoice_items.map(item => item.count * Math.round(item.price)).reduce((a, b) => a + b);
+                        if (invoice.isTaxExp === true) return Math.round(amount * (1 + invoice.tax / 100));
+                        return amount;
+                    },
+                    formatter_postNum(value) {
+                        if (value.length === 7 && !value.includes('-')) {
+                            var firstValue = value.slice(0, 3);
+                            var lastValue = value.slice(3, 7);
+                            return firstValue + '-' + lastValue;
+                        }
+                        return value;
+                    },
+                    changeIsFavorite(value) {
+                        if (value === true)
+                            this.$set(this.customer, 'isFavorite', false);
+                        else
+                            this.$set(this.customer, 'isFavorite', true);
+                    },
+                    //整数意外禁止
+                    formatterNumberAll(value) {
+                        return value.replace(/\D/g, '');
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                    combineAddress(address1, address2) {
+                        if (!address1) address1 = "";
+                        if (!address2) address2 = "";
+                        return String(address1) + String(address2);
+                    },
+                    formatMemo(data) {
+                        if (data && data.length > 20) return data.substr(0, 20) + '...';
+                        return data;
+                    },
+                    isDiffObject: function () {
+                        if (this.oldCustomer.length == 0 || this.customer.length == 0) return false;
+                        if (JSON.stringify(this.oldCustomer) === JSON.stringify(this.customer)) return false;
+                        else return true;
+                    },
+                    checkChange: async function () {
+                        isUpdate = false;
+                        if (this.isDiffObject()) {
+                            await this.$bvModal.msgBoxConfirm('未更新のデータがあります。', {
+                                okVariant: 'primary',
+                                okTitle: '保存して戻る',
+                                cancelVariant: 'danger',
+                                cancelTitle: '保存しないで戻る',
+                                noCloseOnBackdrop: true
+                            }).then(value => {
+                                if (value) isUpdate = true;
+                            });
+                            if (isUpdate) await this.bulkUpsert(this.customer);
+                            this.getCustomers(this.searchCustomerWord);
+                        }
+                        router.push({ path: "?page=index" });
+                    }
+                },
+                mounted: function () {
+                    if (localStorage.getItem('customer'))
+                        this.customer = JSON.parse(localStorage.getItem('customer'));
+                    this.getCustomers();
+                    this.getInvoices();
+                    document.querySelector('title').textContent = '得意先管理';
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        return localStorage.getItem('wMode');
+                    },
+                    customersIndicateIndex: function () {
+                        let customers = this.customers
+                        if (this.customersShowValue === '')
+                            customers = customers.filter(customer => customer.isHide === false);
+                        if (this.customersShowValue === 'favorite')
+                            customers = customers.filter(customer => customer.isFavorite === true);
+                        this.customersIndicateCount = customers.length;
+                        return customers;
+                    },
+                    // バリデーション
+                    customerKanaValidate() {
+                        let regExp = new RegExp(/^[ァ-ンヴー0-9a-zA-Z]*$/);
+                        let result = regExp.test(this.customer.customerKana);
+                        return result
+                    }
+                },
+            })
+
+
+        </script>
+        <% endblock %>

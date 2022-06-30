@@ -1,0 +1,788 @@
+<% extends "head.html" %>
+    <% block content %>
+        <!-- or point to a specific vue-select release -->
+        <script src="../static//library/vue-select.js"></script>
+        <link rel="stylesheet" href="../static/library/vue-select.css" type="text/css" />
+
+        <!-- viewerとして使用-->
+        <script src="../static//library/tingle.min.js"></script>
+        <link rel="stylesheet" href="../static/library/tingle.css" type="text/css" />
+
+
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #itemtable td {
+                vertical-align: middle;
+            }
+
+            .box {
+                /* border: 1px solid #333333; */
+                /* width: 200px; */
+                height: 135px;
+                overflow-y: scroll;
+            }
+
+            .image-in-check {
+                width: 15px;
+                height: 15px;
+                color: #ffffff;
+                background-color: #2779bd;
+                display: flex;
+                /*justify-content: center;*/
+                /*align-items: center;*/
+                font-size: 1.5rem;
+                border-radius: 50%;
+                cursor: pointer;
+
+                position: absolute;
+                top: 5;
+                left: 5;
+                z-index: 0;
+            }
+
+            .file-card {
+                display: flex;
+                flex-wrap: wrap;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- 空行 -->
+                <b-row class="mb-3"></b-row>
+
+                <b-row class="mt-1">
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col></b-col>
+                            <b-col class="text-right">
+                                <sc-menu class="mb-3" v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                        <b-card border-variant="white" class="mb-3 text-center" header="商品一覧"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col md>
+                                    <b-row>
+                                        <b-col cols="8">
+                                            <b-input-group>
+                                                <b-form-input v-model="searchItemWord" id="searchItemWord" size="sm"
+                                                    placeholder="🔍　商品名 or 商品コード or 型式">
+                                                </b-form-input>
+                                                <b-input-group-append>
+                                                    <b-button variant="primary" size="sm" @click="searchItem">検索
+                                                    </b-button>
+                                                </b-input-group-append>
+                                            </b-input-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                                <b-col md>
+                                    <b-row>
+                                        <b-col md>
+                                            <b-form-select v-model="searchItemSelectCategory" :options="categories"
+                                                size="sm">
+                                                <template #first>
+                                                    <b-form-select-option value='' disabled>カテゴリー
+                                                    </b-form-select-option>
+                                                </template>
+                                            </b-form-select>
+                                        </b-col>
+                                        <b-col md>
+                                            <b-form-select v-model="searchItemSelectMaker" :options="makers" size="sm">
+                                                <template #first>
+                                                    <b-form-select-option value='' disabled>メーカー
+                                                    </b-form-select-option>
+                                                </template>
+                                            </b-form-select>
+                                        </b-col>
+                                        <b-col cols="auto">
+                                            <b-form-checkbox v-model="isShowAll">全て表示</b-form-checkbox>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row align-h="end">
+                                <p class="mr-3">表示件数 {{itemsIndicateCount}}件</p>
+                            </b-row>
+                            <b-row align-h="start">
+                                <router-link to="?page=store">
+                                    <b-button variant="primary" id="new-button" class="mb-3 ml-3"
+                                        @click="ItemAddRow();">＋新規追加
+                                    </b-button>
+                                </router-link>
+                            </b-row>
+                            <b-table responsive hover small id="itemtable" sort-by="ID" small label="Table Options"
+                                :items=itemsIndicateIndex :fields="[
+                          {  key: 'update', label: '' },
+                          {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'itemCode', label: '商品コード', thClass: 'text-center', tdClass: 'text-right' },
+                          {  key: 'itemName', label: '商品名', thClass: 'text-center', },
+                          {  key: 'category', label: 'カテゴリ', thClass: 'text-center', },
+                          {  key: 'maker', label: 'メーカー', thClass: 'text-center', },
+                          {  key: 'basePrice', label: '単価', thClass: 'text-center', tdClass: 'text-right' },
+                          {  key: 'baseCost', label: '原価単価', thClass: 'text-center', tdClass: 'text-right' },
+                          {  key: 'numberOfAttachments', label: '', tdClass: 'text-center' },
+                        ]" :tbody-tr-class="rowClass">
+                                <template v-slot:cell(basePrice)="data">
+                                    {{ data.item.basePrice|nf }}
+                                </template>
+                                <template v-slot:cell(baseCost)="data">
+                                    {{ data.item.baseCost|nf }}
+                                </template>
+                                <template v-slot:cell(numberOfAttachments)="data">
+                                    <b-img v-if="countedFiles[data.item.itemCode] > 0"
+                                        src="../static/images/icon/icon_clip.png"></b-img>
+                                </template>
+                                <template v-slot:cell(update)="data">
+                                    <router-link to="?page=show">
+                                        <b-button variant="primary" @click="selectItem(data.item);"><i
+                                                class="fas fa-edit"></i>
+                                        </b-button>
+                                    </router-link>
+                                </template>
+                            </b-table>
+                            <b-row align-h="end">
+                                <b-button v-if="isMore" variant="primary" size="sm" @click="showMore">さらに表示</b-button>
+                            </b-row>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <div class="text-right">
+                            <span class="mr-2">登録日:{{formatDate(item.createdAt)}}</span>
+                            <span class="mr-2">更新日:{{formatDate(item.updatedAt)}}</span>
+                        </div>
+                        <b-card border-variant="white" class="mb-3 text-center" header="商品入力"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="商品名"
+                                        label-for="itemName" label-align="right">
+                                        <b-form-input v-model="item.itemName" id="itemName" size="sm"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="商品コード"
+                                        label-for="itemCode" label-align="right">
+                                        <b-form-input v-model="item.itemCode" id="itemCode" size="sm"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="カテゴリ"
+                                        label-for="category" label-align="right">
+                                        <b-form-select v-model="item.category" :options="categories" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <!-- <b-form-input list="list-category" v-model="item.category" size="sm"
+                                            autocomplete="off"></b-form-input>
+                                        <datalist id="list-category">
+                                            <option v-for="category in categories">{{category}}</option>
+                                        </datalist> -->
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="メーカー"
+                                        label-align="right">
+                                        <b-form-select v-model="item.maker" :options="makers" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <!-- <b-form-input list="list-maker" v-model="item.maker" size="sm"
+                                            autocomplete="off"></b-form-input>
+                                        <datalist id="list-maker">
+                                            <option v-for="maker in makers">{{maker}}</option>
+                                        </datalist> -->
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="単位"
+                                        label-for="unit" label-align="right">
+                                        <b-form-select v-model="item.unit" :options="units" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <!-- <b-form-input list="list-unit" v-model="item.unit" size="sm" autocomplete="off">
+                                        </b-form-input>
+                                        <datalist id="list-unit">
+                                            <option v-for="unit in units">{{unit}}</option>
+                                        </datalist> -->
+                                    <!--
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="単位"
+                                        label-for="unit">
+                                        <v-select  taggable push-tags  :options="units" size="sm">
+                                            <template #no-options="{ search, searching, loading }">
+                                                This is the no options slot.
+                                            </template>
+                                        </v-select>
+                                    </b-form-group>
+                                    -->
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="型式"
+                                        label-for="model" label-align="right">
+                                        <b-form-input v-model="item.model" id="model" size="sm"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="単価"
+                                        label-for="basePrice" label-align="right">
+                                        <b-form-input v-model="item.basePrice" id="basePrice" size="sm" type="number">
+                                        </b-form-input>
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="単価原価"
+                                        label-for="baseCost" label-align="right">
+                                        <b-form-input v-model="item.baseCost" id="baseCost" size="sm" type="number">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="非表示"
+                                        label-for="isHide" label-align="right">
+                                        <b-form-checkbox v-model="item.isHide"></b-form-checkbox>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="仕入先"
+                                        label-for="supplier" label-align="right">
+                                        <b-form-input v-model="item.supplier" id="supplier" size="sm"
+                                            autocomplete="off"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="メモ"
+                                        label-for="メモ" label-align="right">
+                                        <b-form-textarea v-model="item.memo" size="sm" rows="3"></b-form-textarea>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                </b-col>
+                                <b-col sm></b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                </b-col>
+                            </b-row>
+
+
+                        </b-card>
+                        <b-row>
+                            <b-col md="3">
+                                <form action="upload-files/s/upload/items" class="dropzone" id="dropz">
+                                    <input hidden type="text" name="fileId" v-model="item.itemCode">
+
+                                    <input hidden type="file" name="file">
+                                </form>
+                            </b-col>
+                            <b-col>
+                                <div v-if="!dicFiles.length" class="mt-5">
+                                    ←クリックまたはドロップしてファイルをアップロード。
+                                </div>
+
+                                <template v-if="uploadListMode=='list'">
+
+                                    <b-table-simple hover small caption-top responsive class="box">
+                                        <template v-for="f in dicFiles">
+                                            <b-tr>
+                                                <b-td width="5%">
+                                                    <input type="checkbox" v-model="f.isSelect" size="sm">
+                                                </b-td>
+                                                <b-td width="15%">
+                                                    <b-img :src="f.urlThumb" @click="openViewer(f)" width="90" fluid>
+                                                    </b-img>
+                                                </b-td>
+                                                <b-td class="ml-5">{{f.filename}}</b-td>
+                                            </b-tr>
+                                        </template>
+                                    </b-table-simple>
+                                </template>
+                                <template v-if="uploadListMode=='card'">
+                                    <div class="file-card ">
+                                        <template v-for="f in dicFiles">
+                                            <b-card border-variant="light">
+                                                <b-img :src="'../'+f.thumbPath" @click="openViewer(f)" width="90" fluid>
+                                                </b-img>
+                                                <input type="checkbox" v-model="f.isSelect" class="image-in-check">
+                                            </b-card>
+                                        </template>
+                                    </div>
+                                </template>
+                            </b-col>
+                            <b-col md="1">
+                                <b-button @click="deleteFiles(item.itemCode)" class="mr-2 mb-3" variant="danger"><i
+                                        class="fas fa-trash-alt"></i>
+                                </b-button>
+                                <b-button v-if="uploadListMode=='list'" @click="uploadListMode='card'" class="mr-2">
+                                    <b-icon icon="app"></b-icon>
+                                </b-button>
+                                <b-button v-if="uploadListMode=='card'" @click="uploadListMode='list'" class="mr-2">
+                                    <b-icon icon="list-task"></b-icon>
+                                </b-button>
+                            </b-col>
+                        </b-row>
+                        <!--アップロード機能ここまで-->
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+
+            </div>
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <b-button @click="checkChange" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                    </b-col>
+                    <b-col class="text-right">
+                        <b-button pill variant="primary" @click="bulkUpsert(item);">保存
+                        </b-button>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(item,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+            <!-- エラーモーダル -->
+            <confirm-modal-danger :title="title" :message="message">
+            </confirm-modal-danger>
+
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+
+        </div>
+
+        <script>
+            Vue.filter('nf', function (val) {
+                if (isNaN(val)) return null;
+                if (val === null) return;
+                return val.toLocaleString();
+            });
+
+            Vue.component('v-select', VueSelect.VueSelect);
+            const router = new VueRouter({
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    searchItemWord: '',
+                    searchItemSelectCategory: '',
+                    searchItemSelectMaker: '',
+                    itemsIndicateCount: 0,
+                    items: [],               //全件item
+                    item: [],                //選択中のitem
+                    oldItem: [],                //選択中のitem
+                    units: [],
+                    categories: [],
+                    makers: [],
+                    fileId: '', //upload用ID
+                    dicFiles: [],
+                    form: {
+                        file: '',
+                        fileId: ''
+                    },
+                    uploadListMode: 'card', //list,card
+                    isShowAll: false,
+                    isMore: false,
+                    routeTo: '',
+                    routeFrom: '',
+                    title: '',              //モーダルタイトル
+                    message: '',            //モーダルメッセージ
+                    offset: 0,
+                    countedFiles: {}
+                },
+                methods: {
+                    // ---Items---
+                    getItems: async function (searchWord = '', offset = 0) {
+                        self = this;
+                        url = '/v1/items'
+                        await axios.get(url, {
+                            params: {
+                                search: searchWord,
+                                offset: offset,
+                                moreCheck: true,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                if (offset == 0) {
+                                    self.offset = 0;
+                                    self.items = response.data.items;
+                                    self.isMore = response.data.isMore;
+                                }
+                                else {
+                                    response.data.items.map(item => self.items.push(item));
+                                    self.isMore = response.data.isMore;
+                                }
+                            });
+                    },
+                    bulkUpsert: async function (item) {
+                        if (!item.id) {
+                            await this.insertItem(item);
+                        }
+                        else {
+                            await this.updateItem(item);
+                        }
+                    },
+                    insertItem: async function (item) {
+                        self = this;
+                        await axios.post("/v1/item", item)
+                            .then(function (response) {
+                                Vue.set(self.item, 'id', response.data.id)
+                                self.item.isInsert = false;
+                                self.getItem(self.item);
+                                localStorage.setItem('item', JSON.stringify(self.item));
+                                app.title = '新規作成';
+                                app.message = '保存しました。';
+                                app.$bvModal.show('confirmModal');
+                            })
+                            .catch(function (error) {
+                                app.title = 'エラー';
+                                app.message = error.response.data.message;
+                                app.$bvModal.show('confirmModalDanger');
+                                console.log(error);
+                                return;
+                            });
+                        self.oldItem = { ...self.item };
+
+                    },
+                    updateItem: async function (item) {
+                        self = this;
+                        await axios.put("/v1/item/" + item.id, item)
+                            .then(function (response) {
+                                console.log(response);
+                                app.title = '更新';
+                                app.message = '保存しました。'
+                                app.$bvModal.show('confirmModal');
+                            })
+                            .catch(function (error) {
+                                app.title = 'エラー';
+                                app.message = error.response.data.message;
+                                app.$bvModal.show('confirmModalDanger');
+                                console.log(error);
+                                return;
+                            });
+                        await self.getItem(self.item);
+                        localStorage.setItem('item', JSON.stringify(self.item));
+                        self.oldItem = { ...self.item };
+                    },
+                    deleteItem: async function (item) {
+                        self = this;
+                        await axios.delete("/v1/item/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.item = '';
+                                self.getItems(self.searchItemWord);
+                            });
+                    },
+                    ItemAddRow: function () {
+                        self = this;
+                        self.items.push({
+                            isInsert: true,
+                        });
+                        self.item = self.items.slice(-1)[0];
+                        localStorage.setItem('item', JSON.stringify(self.item))
+                        this.clearFileList();
+                    },
+                    selectItem: function (item) {
+                        this.item = item;
+                        this.oldItem = { ...item };
+                        console.log(this.item);
+                        localStorage.setItem('item', JSON.stringify(item))
+                        this.getFileListDZ();
+                    },
+                    getItem: async function (item) {
+                        self = this;
+                        await axios.get("/v1/item/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.item, key, value);
+                                }
+                            });
+                        this.getFileList(item.itemCode);
+
+                    },
+                    searchItem: function () {
+                        this.getItems(this.searchItemWord);
+                    },
+                    rowClass: function (item, type) {
+                        if (!item || type !== 'row') return
+                        if (!item.id) return "d-none";
+                    },
+                    showMore: function () {
+                        this.offset += 100;
+                        this.getItems(this.searchItemWord, this.offset)
+                    },
+                    getUnits: async function () {
+                        self = this;
+                        await axios.get("/units")
+                            .then(function (response) {
+                                console.log(response);
+                                self.units = response.data.map(item => item['unitName']);
+                                self.units.unshift('');
+                            });
+                    },
+                    getCategories: async function () {
+                        self = this;
+                        await axios.get('/categories')
+                            .then(function (response) {
+                                console.log(response);
+                                self.categories = response.data.map(item => item['categoryName']);
+                                self.categories.unshift('');
+                            });
+                    },
+                    getMakers: async function () {
+                        self = this;
+                        await axios.get('/makers')
+                            .then(function (response) {
+                                console.log(response);
+                                self.makers = response.data.map(item => item['makerName']);
+                                self.makers.unshift('');
+                            });
+                    },
+                    coutFiles: function () {
+                        self = this;
+                        axios.get("/count-files/s/upload/items")
+                            .then(function (response) {
+                                console.log(response);
+                                self.countedFiles = response.data;
+                            });
+                    },
+                    modalShow: function (item, modalName) {
+                        this.item = item;
+                        console.log(this.item);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteItem(this.item);
+                        }
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                    async getFileListDZ() {
+                        this.getFileList(this.item.itemCode);
+                    },
+                    getFileList: async function (fid) {
+                        self = this;
+                        url = "list-files/s/upload/items/" + fid;
+                        flen = 0;
+                        await axios.get(url)
+                            .then(function (response) {
+                                console.log(response.data);
+                                self.dicFiles = response.data;
+                                self.countedFiles[fid] = self.dicFiles.length;
+                            })
+                        //return flen;
+                    },
+                    clearFileList: function () {
+                        this.dicFiles = {};
+                    },
+                    //uploadFile: async function (event) {
+                    //    self = this;
+                    //    event.preventDefault();
+                    //    this.isUploading = true;
+                    //    //let files = event.target.files;
+                    //    const formData = new FormData();
+                    //    formData.append('file', self.form.file);
+                    //    formData.append('fileId', self.item.itemCode);
+                    //    await axios.post("upload-files/s/upload", formData)
+                    //        .then((res) => {
+                    //            self.getFileList(self.item.itemCode);
+                    //        })
+                    //        .catch((err) => {
+                    //            console.log(err)
+                    //        });
+                    //    this.isUploading = false;
+                    //},
+                    deleteFiles: async function (fid) {
+                        self = this;
+                        url = "delete-files/s";
+                        await axios.delete(url, {
+                            data: self.dicFiles
+                        }
+                        ).then(function (response) {
+                            console.log(response.data);
+                            self.getFileListDZ();
+                        });
+                    },
+                    //---------変更があったかどうかをチェク。アラート ---------
+                    isDiffObject: function () {
+                        if (this.oldItem.length == 0 || this.item.length == 0) return false;
+                        if (JSON.stringify(this.oldItem) === JSON.stringify(this.item)) return false;
+                        else return true;
+                    },
+                    checkChange: async function () {
+                        isUpdate = false;
+                        if (this.isDiffObject()) {
+                            await this.$bvModal.msgBoxConfirm('未更新のデータがあります。', {
+                                okVariant: 'primary',
+                                okTitle: '保存して戻る',
+                                cancelVariant: 'danger',
+                                cancelTitle: '保存しないで戻る',
+                                noCloseOnBackdrop: true
+                            }).then(value => {
+                                if (value) isUpdate = true;
+                            });
+                            if (isUpdate) await this.bulkUpsert(this.item);
+                            this.getItems(this.searchItemWord);
+                            this.countChanged = 0;
+                        }
+                        this.clearFileList();
+                        router.push({ path: "?page=index" });
+                        //TODO：商品コードが被っている際に保存して戻るを押下するとハンドリングされたエラー文を吐いたまま一覧ページに戻るので、時間のある時に修正したい。
+                    },
+                    openViewer: function (f) {
+                        //this.modal.setFooterContent(f.filename);
+                        content = ''
+                        if (f.type == 'pdf') {
+                            content = "<div class='iframe-wrapper' ><iframe src=" + f.url + " frameborder='0'></iframe></div>"
+                        } else if (f.type == 'csv') {
+                            content = "このファイルはViwerでは開けません";
+                        } else {
+                            content = "<img src=" + f.url + " width='100%'>"
+                        }
+                        this.modal.setContent(content);
+                        this.modal.open();
+                    }
+                },
+                mounted: function () {
+                    if (localStorage.getItem('item'))
+                        this.item = JSON.parse(localStorage.getItem('item'));
+                    this.getItems();
+                    this.getUnits();
+                    this.getCategories();
+                    this.getMakers();
+                    this.coutFiles();
+                    document.querySelector('title').textContent = '商品管理';
+                    if (this.pageName == 'show' || this.pageName == 'store') {
+                        this.getFileListDZ();
+                    }
+                    this.modal = new tingle.modal({
+                        footer: false,
+                        stickyFooter: false,
+                        closeMethods: ['overlay', 'button', 'escape'],
+                        closeLabel: "Close",
+                    });
+
+                },
+                updated: function () {
+                    self = this;
+                    if ((this.routeFrom == 'index' || this.routeFrom == undefined) && (this.routeTo == 'show' || this.routeTo == 'store')) {
+                        this.routeFrom = 'show';
+                        this.routeTo = 'show';
+                        initDropzone();
+                    }
+                    if (this.pageName == 'show' && this.routeFrom == '' && this.routeTo == '') {
+                        this.routeFrom = 'show';
+                        this.routeTo = 'show';
+                        initDropzone();
+                    }
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                    itemsIndicateIndex: function () {
+                        let items = this.items
+                        if (this.isShowAll === false)
+                            items = items.filter(item => item.isHide === false);
+                        items = items.filter(item =>
+                            searchFilter(item.category, this.searchItemSelectCategory) &&
+                            searchFilter(item.maker, this.searchItemSelectMaker)
+                        )
+                        this.itemsIndicateCount = items.length;
+                        return items;
+                    },
+                },
+                watch: {
+                    $route(to, from) { // パラメータの変更でドロップゾーンを初期化するため
+                        this.routeFrom = from.query.page;
+                        this.routeTo = to.query.page;
+                    }
+                }
+            })
+
+            function searchFilter(searchTarget, searchWord) {
+                if ((searchTarget === null && searchWord === '') || (searchTarget !== null && searchWord === '')) {
+                    return true;
+                }
+                if (searchTarget === null && searchWord !== '') {
+                    return false;
+                }
+                return searchTarget.includes(searchWord);
+            };
+            // アップロード機能　    
+            Dropzone.autoDiscover = false;
+            function destroyDrop() {
+                if (Dropzone.instances.length > 0) {
+                    Dropzone.instances.forEach((e) => {
+                        e.destroy();
+                    });
+                }
+            }
+            function initDropzone() {
+                Dropzone.autoDiscover = false;
+                console.log("init dropzone");
+                destroyDrop();
+                dropz = new Dropzone("form#dropz", {
+                    dictDefaultMessage: '+',
+                    parallelUploads: 2,
+                    init: function () {
+                        this.on("complete", file => {
+                            console.log("complete A file has been added");
+                            this.removeFile(file);
+                            if (this.getUploadingFiles().length === 0 && this.getQueuedFiles().length === 0) {
+                                app.getFileListDZ();
+                            }
+                        });
+                    }
+                });
+            }
+            // end アップロード機能
+
+        </script>
+
+        <% endblock %>

@@ -1,0 +1,101 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <b-card class="fixed-top header" style="background: rgba(255,255,255,0.5);">
+                <b-row>
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col>
+                            </b-col>
+                            <b-col class="text-right">
+                                <b-button pill href="/setting-page">設定画面へ
+                                </b-button>
+                                <b-button pill href="/crescom-support-page">管理画面へ
+                                </b-button>
+                            </b-col>
+                            <!-- サイドバー -->
+                            <b-col cols="1" class="text-right">
+                                <sc-menu v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="CSVダウンロード"
+                            header-border-variant="light">
+                            <p>CSVのダウンロードを行います。</p>
+                            <b-button class="mt-5" variant="success" size="lg" @click="submit">CSVダウンロード
+                            </b-button>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            });
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    message: '',
+                    title: '',
+                },
+                methods: {
+                    submit: async function () {
+                        self = this;
+                        await axios.get("/csv-export")
+                            .then(function (response) {
+                                console.log(response);
+                                app.title = 'ダウンロード完了';
+                                app.message = 'ダウンロードしました。';
+                                let data = response.data;
+                                const blob = new Blob([data], { type: 'application/csv' })
+                                let link = document.createElement('a')
+                                link.href = window.URL.createObjectURL(blob)
+                                link.download = 'export.csv'
+                                link.click()
+                                app.showResultModal();
+                            });
+                    },
+                    showResultModal: function () {
+                        this.$bvModal.show('confirmModal');
+                    },
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = 'CSVダウンロード';
+                },
+                router,
+                computed: {
+                    modeName() {
+                        return localStorage.getItem('wMode');
+                    },
+
+                }
+            })
+        </script>
+        <% endblock %>

@@ -1,0 +1,276 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="images/favicon.ico" rel="shortcut icon">
+
+    <title>quotaion mock</title>
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+    <!-- Load fontawesome -->
+    <!-- link href="./css/all.css" rel="stylesheet" -->
+    <!--load all styles -->
+    <!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+    <link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+        crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+
+    <!-- 各種便利なツール塁です必要なときに随時使用のこと
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.css">
+<script src="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.js"></script>
+<script src="https://unpkg.com/vue-lazyload/vue-lazyload.js"></script>
+<script src="./jsQR.js"></script>
+<script src="https://cozmo.github.io/jsQR/jsQR.js"></script>
+-->
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+        integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    Viewレイヤのテスト
+    <div id="app">
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="customers" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'customerName', label: '得意先名' },
+                    {  key: 'honorificTitle', label: '敬称'},
+                    {  key: 'postNumber', label: '郵便番号'},
+                    {  key: 'address', label: '住所'},
+                    {  key: 'telNumber', label: '電話番号'},
+                    {  key: 'faxNumber', label: 'FAX番号'},
+                    {  key: 'url', label: 'ホームページURL'},
+                    {  key: 'email', label: 'メールアドレス'},
+                    {  key: 'manager', label: '担当者'},
+                    {  key: 'representative', label: '代表者'},
+                    {  key: 'memo', label: 'メモ'},
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="items" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'itemName', label: '商品名' },
+                    {  key: 'unit', label: '単位' },
+                    {  key: 'basePrice', label: '値段' },
+                    {  key: 'cost', label: '原価' },
+                    {  key: 'memo', label: 'メモ' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="invoices" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'applyNumber', label: '請求番号' },
+                    {  key: 'applyDate', label: '日付' },
+                    {  key: 'expiry', label: '請求書有効期限' },
+                    {  key: 'title', label: '件名' },
+                    {  key: 'memo', label: 'メモ' },
+                    {  key: 'remarks', label: '備考' },
+                    {  key: 'isTaxExp', label: '内税・外税' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="invoiceItems" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'price', label: '値段' },
+                    {  key: 'count', label: '個数' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="quotations" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'applyNumber', label: '見積番号' },
+                    {  key: 'applyDate', label: '日付' },
+                    {  key: 'expiry', label: '見積書有効期限' },
+                    {  key: 'title', label: '件名' },
+                    {  key: 'memo', label: 'メモ' },
+                    {  key: 'remarks', label: '備考' },
+                    {  key: 'isTaxExp', label: '内税・外税' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="quotationItems" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'price', label: '値段' },
+                    {  key: 'count', label: '個数' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="memos" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'title', label: '件名' },
+                    {  key: 'content', label: '内容' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="units" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'unitName', label: '単位名' },
+                  ]">
+        </b-table>
+
+        <b-table responsive hover caption-top striped small id="clist" sort-by="id" sort-desc=true small
+            head-variant="light" label="Table Options" :items="setting" :fields="[
+                    {  key: 'id', label: 'ID',  sortable: true },
+                    {  key: 'companyName', label: '会社名' },
+                    {  key: 'representative', label: '代表者名' },
+                    {  key: 'postNumber', label: '郵便番号' },
+                    {  key: 'address', label: '住所' },
+                    {  key: 'telNumber', label: '電話番号' },
+                    {  key: 'faxNumber', label: 'FAX番号' },
+                    {  key: 'url', label: 'ホームページURL' },
+                    {  key: 'email', label: 'メールアドレス' },
+                    {  key: 'logoFilePath', label: 'ロゴファイルパス' },
+                    {  key: 'stampFilePath', label: '印鑑ファイルパス' },
+                    {  key: 'isDisplayQuotationLogo', label: 'ロゴ見積書表示' },
+                    {  key: 'isDisplayInvoiceLogo', label: 'ロゴ請求書表示' },
+                    {  key: 'isDisplayDeliveryLogo', label: 'ロゴ納品書表示' },
+                    {  key: 'isDisplayQuotationStamp', label: '印鑑見積書表示' },
+                    {  key: 'isDisplayInvoiceStamp', label: '印鑑請求書表示' },
+                    {  key: 'isDisplayDeliveryStamp', label: '印鑑納品書表示' },
+                  ]">
+        </b-table>
+
+        <b-button @click='getCustomers'>得意先読み込み</b-button>
+        <b-button @click='getItems'>商品読み込み</b-button>
+        <b-button @click='getInvoices'>請求書読み込み</b-button>
+        <b-button @click='getInvoiceItems'>請求書＿商品読み込み</b-button>
+        <b-button @click='getQuotations'>見積書読み込み</b-button>
+        <b-button @click='getQuotationItems'>見積書＿商品読み込み</b-button>
+        <b-button @click='getMemos'>メモ読み込み</b-button>
+        <b-button @click='getUnits'>単位名読み込み</b-button>
+        <b-button @click='getSetting'>設定読み込み</b-button>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                customers: [],
+                items: [],
+                invoices: [],
+                invoiceItems: [],
+                quotations: [],
+                quotationItems: [],
+                memos: [],
+                units: [],
+                setting: [],
+            },
+            methods: {
+                getCustomers: async function () {
+                    self = this;
+                    url = "/customers";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.customers = response.data;
+                        });
+                },
+                getItems: async function () {
+                    self = this;
+                    url = "/items";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.items = response.data
+                        });
+                },
+                getInvoices: async function () {
+                    self = this;
+                    url = "/invoices";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.invoices = response.data;
+                        });
+                },
+                getInvoiceItems: async function () {
+                    self = this;
+                    url = "/invoice_items";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.invoiceItems = response.data;
+                        });
+                },
+                getQuotations: async function () {
+                    self = this;
+                    url = "/quotations";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.quotations = response.data;
+                        });
+                },
+                getQuotationItems: async function () {
+                    self = this;
+                    url = "/quotation_items";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.quotationItems = response.data;
+                        });
+                },
+                getMemos: async function () {
+                    self = this;
+                    url = "/memos";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.memos = response.data;
+                        });
+                },
+                getUnits: async function () {
+                    self = this;
+                    url = "/units";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.units = response.data;
+                        });
+                },
+                getSetting: async function () {
+                    self = this;
+                    url = "/setting";
+                    await axios.get(url)
+                        .then(function (response) {
+                            console.log(response);
+                            self.setting = response.data;
+                        });
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>

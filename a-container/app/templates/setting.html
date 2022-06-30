@@ -1,0 +1,441 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .sm-mode {
+                display: none;
+            }
+
+            .pc-mode {
+                display: block;
+            }
+
+            @media screen and (max-width:690px) {
+                .sm-mode {
+                    display: block;
+                }
+
+                .pc-mode {
+                    display: none;
+                }
+            }
+
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+        </style>
+
+
+        <div id="app" v-cloak>
+            <setting-header :mode-name="modeName"></setting-header>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="会社情報"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="会社名"
+                                        label-for="companyName" label-align="right">
+                                        <b-form-input v-model="setting.companyName" id="companyName" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="登録番号"
+                                        label-for="registerNumber" label-align="right">
+                                        <b-form-input v-model="setting.registerNumber" id="registerNumber" size="sm"
+                                            type="number" placeholder="インボイスNo.">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="郵便番号"
+                                        label-for="postNumber" label-align="right">
+                                        <b-form-input v-model="setting.postNumber" id="postNumber" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="住所"
+                                        label-for="address" label-align="right">
+                                        <b-form-input v-model="setting.address" id="address" size="sm"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="電話番号"
+                                        label-for="telNumber" label-align="right">
+                                        <b-form-input v-model="setting.telNumber" id="telNumber" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="FAX番号"
+                                        label-for="faxNumber" label-align="right">
+                                        <b-form-input v-model="setting.faxNumber" id="faxNumber" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="URL"
+                                        label-for="url" label-align="right">
+                                        <b-form-input v-model="setting.url" id="url" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="email"
+                                        label-for="email" label-align="right">
+                                        <b-form-input v-model="setting.email" id="email" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="代表者名"
+                                        label-for="representative" label-align="right">
+                                        <b-form-input v-model="setting.representative" id="representative" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="管理者"
+                                        label-for="administrator" label-align="right">
+                                        <b-form-input v-model="setting.administrator" id="administrator" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="振込先"
+                                        label-for="payee" label-align="right">
+                                        <b-form-input v-model="setting.payee" id="payee" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="口座名義"
+                                        label-for="accountHolder" label-align="right">
+                                        <b-form-input v-model="setting.accountHolder" id="accountHolder" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="カナ"
+                                        label-for="accountHolderKana" label-align="right">
+                                        <b-form-input v-model="setting.accountHolderKana" id="accountHolderKana"
+                                            size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+
+            </div>
+
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="印鑑・ロゴアップロード"
+                            header-border-variant="light">
+                            会社ロゴをアップロードできます。ロゴはトップページ、サイドバー、見積書・請求書に使用されます。<br>
+                            印鑑をアップロードできます。印鑑は見積書・請求書に使用されます。<br>
+                            画像サイズは○○×○○以内のものを使用し、PNGまたはJPEG形式のみとなります。
+                            <b-row class="mt-5">
+                                <b-col cols="1"></b-col>
+                                <b-col sm>
+                                    <p>会社ロゴ</p>
+                                    <img :src="setting.logoFilePath" :width="setting.logoWidth"
+                                        :height="setting.logoHeight">
+                                    <b-button size="sm" variant="danger" style="vertical-align: top;"
+                                        @click="setting.logoFilePath='./static/asset/logo/NotImage.png'">✖</b-button>
+                                </b-col>
+                                <b-col cols="1"></b-col>
+                                <b-col sm>
+                                    <p>印鑑ロゴ</p>
+                                    <img :src="setting.stampFilePath" :width="setting.stampWidth"
+                                        :height="setting.stampHeight">
+                                    <b-button size="sm" variant="danger" style="vertical-align: top;"
+                                        @click="setting.stampFilePath='./static/asset/stamp/NotImage.png'">✖</b-button>
+                                </b-col>
+                                <b-col cols="1"></b-col>
+                            </b-row>
+                            <b-row class="mt-5">
+                                <b-col cols="1"></b-col>
+                                <b-col sm>
+                                    <p>会社ロゴの印刷時の表示</p>
+                                    <div class="isPrintDisplay">
+                                        <b-form-checkbox v-model="setting.isDisplayQuotationLogo">見積書</b-form-checkbox>
+                                        <b-form-checkbox v-model="setting.isDisplayInvoiceLogo">請求書</b-form-checkbox>
+                                        <b-form-checkbox v-model="setting.isDisplayDeliveryLogo">納品書</b-form-checkbox>
+                                    </div>
+                                </b-col>
+                                <b-col cols="1"></b-col>
+                                <b-col sm>
+                                    <p>印鑑ロゴの印刷時の表示</p>
+                                    <div class="isPrintDisplay">
+                                        <b-form-checkbox v-model="setting.isDisplayQuotationStamp">見積書</b-form-checkbox>
+                                        <b-form-checkbox v-model="setting.isDisplayInvoiceStamp">請求書</b-form-checkbox>
+                                        <b-form-checkbox v-model="setting.isDisplayDeliveryStamp">納品書</b-form-checkbox>
+                                    </div>
+                                </b-col>
+                                <b-col cols="1"></b-col>
+                            </b-row>
+                            <b-row class="mt-5">
+                                <b-col cols="1"></b-col>
+                                <b-col sm>
+                                    <p>会社ロゴアップロード</p>
+                                    <form action="upload-files/s/asset" class="dropzone" id="logo-dropzone">
+                                        <input hidden type="text" name="fileId" v-model="fileId2">
+
+                                        <input hidden type="file" name="file" id="logo-dropzone" multiple>
+                                    </form>
+                                    <b-form-group label-cols="4" label-size="sm" label="高さ" label-for="logoHeight"
+                                        class="mt-3">
+                                        <b-form-select v-model="setting.logoHeight" :options="selectSize" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-size="sm" label="幅" label-for="logoWidth">
+                                        <b-form-select v-model="setting.logoWidth" :options="selectSize" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col cols="1"></b-col>
+                                <b-col sm>
+                                    <p>印鑑ロゴアップロード</p>
+                                    <form action="upload-files/s/asset" class="dropzone" id="stamp-dropzone">
+                                        <input hidden type="text" name="fileId" v-model="fileId">
+
+                                        <input hidden type="file" name="file" id="stamp-dropzone" multiple>
+                                    </form>
+                                    <b-form-group label-cols="4" label-size="sm" label="高さ" label-for="stampHeight"
+                                        class="mt-3">
+                                        <b-form-select v-model="setting.stampHeight" :options="selectSize" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                    <b-form-group label-cols="4" label-size="sm" label="幅" label-for="stampWidth">
+                                        <b-form-select v-model="setting.stampWidth" :options="selectSize" size="sm">
+                                        </b-form-select>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col cols="1"></b-col>
+                            </b-row>
+                        </b-card>
+
+                        <div>
+                            <b-row class="mt-2">
+                                <b-button v-if="myUser.role==='crescom_support'" href="/crescom-support-page">
+                                    クレスコムサポート画面へ</b-button>
+                                <b-button class="ml-1" @click="$bvModal.show('versionModal');">バージョン情報</b-button>
+                            </b-row>
+                        </div>
+
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+
+                </b-row>
+            </div>
+
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="設定"
+                            header-border-variant="light">
+                            <b-row>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="消費税"
+                                        label-for="defaultTax" label-align="right">
+                                        <b-form-input v-model="setting.defaultTax" id="defaultTax" size="sm">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col sm>
+                                    <b-form-group label-cols="4" label-cols-lg="2" label-size="sm" label="TBボタン非表示"
+                                        label-for="isHideTabletMode" label-align="right">
+                                        <b-form-checkbox v-model="isHideTabletMode"></b-form-checkbox>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </div>
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card class="fixed-bottom footer" style="background: rgba(52,58,64,0);pointer-events:none;border: 0px;">
+                <b-row>
+                    <b-col></b-col>
+                    <b-col></b-col>
+                    <b-col cols="4" class="text-right">
+                        <b-button variant="primary" class="mr-3" @click="bulkUpsert(setting);"
+                            style="box-shadow: 0 10px 25px 0 rgba(0,0,0,0.5); pointer-events:auto;">保存
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+            <!-- エラーモーダル -->
+            <confirm-modal-danger :title="title" :message="message"></confirm-modal-danger>
+
+            <!-- バージョンモーダル -->
+            <div>
+                <b-modal id="versionModal" size="xl" hide-footer>
+                    <template #modal-title>
+                        バージョン情報
+                    </template>
+                    <div class="d-block text-center">
+                        <p>
+                            ver:1.0<br />
+                            Copyright © 2022-2022 Crescom inc. All Rights Reserved.
+                        </p>
+                        <p>
+                            Released under the MIT license<br />
+                            <a
+                                href="https://github.com/gamasenninn/soho-caddie/blob/main/LICENSE">https://github.com/gamasenninn/soho-caddie/blob/main/LICENSE</a>
+                        </p>
+                    </div>
+                </b-modal>
+            </div>
+
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            });
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    setting: [],                //選択中のsetting
+                    myUser: [],                 //ログイン中のユーザー情報
+                    fileId: 'stamp',
+                    fileId2: 'logo',
+                    title: '',                  //モーダルタイトル
+                    message: '',                //モーダルメッセージ
+                    isHideTabletMode: false,
+                    selectSize: ['', '40', '50', '60',],    //敬称セレクトボックス用
+                    isHideTabletMode: false,
+                },
+                methods: {
+                    // ---Settings---
+                    bulkUpsert(item) {
+                        if (!item.registerNumber) item.registerNumber = '';
+                        if (item.registerNumber.length > 13) {
+                            this.title = 'エラー';
+                            this.message = '登録番号は１３桁以下で入力してください';
+                            this.$bvModal.show('confirmModalDanger');
+                            return
+                        }
+                        else {
+                            this.updateSetting(item);
+                        }
+                    },
+                    updateSetting: async function (item) {
+                        self = this;
+                        await axios.put("/setting/1", item)
+                            .then(function (response) {
+                                self.getSetting(self.setting);
+                                console.log(response);
+                                localStorage.setItem('isHideTabletMode', String(self.isHideTabletMode));
+                                app.title = '更新';
+                                app.message = '保存しました。';
+                                app.$bvModal.show('confirmModal');
+                            });
+                    },
+                    getSetting: async function () {
+                        self = this;
+                        await axios.get("/setting")
+                            .then(function (response) {
+                                console.log(response);
+                                self.setting = response.data
+                            });
+                    },
+                    getLoginUser: async function () {
+                        self = this;
+                        await axios.get("/login-user")
+                            .then(function (response) {
+                                console.log(response);
+                                self.myUser = response.data;
+                            });
+                    },
+                },
+                mounted: function () {
+                    this.getSetting();
+                    this.getLoginUser();
+                    if (localStorage.getItem('isHideTabletMode'))
+                        this.isHideTabletMode = localStorage.getItem('isHideTabletMode');
+                    document.querySelector('title').textContent = '各種情報設定';
+                },
+                router,
+                computed: {
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                    isHideTabletModeValue() {
+                        return localStorage.getItem('isHideTabletMode');
+                    },
+                }
+            })
+
+            Dropzone.options.stampDropzone = {
+                dictDefaultMessage: '+',
+                init: function () {
+                    this.on("complete", file => {
+                        console.log("complete A file has been added:", app.fileId2, file);
+                        this.removeFile(file);
+                        app.setting.stampFilePath = "./static/asset/stamp/" + file.upload.filename
+                    });
+                }
+            };
+            Dropzone.options.logoDropzone = {
+                dictDefaultMessage: '+',
+                init: function () {
+                    this.on("complete", file => {
+                        console.log("complete A file has been added:", app.fileId, file);
+                        this.removeFile(file);
+                        app.setting.logoFilePath = "./static/asset/logo/" + file.upload.filename
+                    });
+                }
+            };
+
+        </script>
+        <% endblock %>

@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>soho Web</title>
+    <meta charset="utf-8">
+    <meta name="description" content="A javascript popup/floating window library.">
+</head>
+<body style="overflow: hidden;background: #ffffff 50% no-repeat fixed; background-size: cover;">
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-131821888-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-131821888-1');
+</script>
+<script src="https://riversun.github.io/jsframe/jsframe.js"></script>
+
+<script>
+    const jsFrame = new JSFrame();
+
+    let appUrl = ['../top.html','../mock01_quotaion.html']
+
+    function start() {
+      //---------
+      const frame03 = jsFrame.create({
+        title: '現在の気分とアドレナリン放出量',
+        name: 'window03',
+        left: 0, top: 0, width: 600, height: 360,
+        //URL to display in iframe
+        url: 'graph_smpl.html',
+
+        // If you specify "urlLoaded",
+        // you can specify a callback when the iframe content is finished loading
+        urlLoaded: (frame) => {
+          // You can use the on method to register an event listener for an element in an iframe
+          frame.on('#my_button_01', 'click', (_frame, evt) => {
+            // In this case, frame and _frame refer to the same object.
+            showToast(`Clicked ${_frame.getName()}'s ${evt.target.id}`);
+          });
+
+          frame.on('#my_button_02', 'click', (_frame, evt) => {
+            _frame.closeFrame();
+            showToast(`${_frame.getName()} closed by clicking ${evt.target.id}`);
+          });
+
+          frame.on('#my_button_03', 'click', (_frame, evt) => {
+            showToast(`Clicked ${_frame.getName()}'s ${evt.target.id}`);
+          });
+        }
+      });
+      frame03.show();
+
+      //---------01--------
+      const frame01 = jsFrame.create({
+        title: 'Window1',
+        name: 'window01',
+        left: 120, top: 160, width: 720, height: 600,
+        //URL to display in iframe
+        url: '../mock01_quotaion.html',
+
+        // If you specify "urlLoaded",
+        // you can specify a callback when the iframe content is finished loading
+        urlLoaded: (frame) => {
+          // You can use the on method to register an event listener for an element in an iframe
+          frame.on('#my_button_01', 'click', (_frame, evt) => {
+            // In this case, frame and _frame refer to the same object.
+            showToast(`Clicked ${_frame.getName()}'s ${evt.target.id}`);
+          });
+
+          frame.on('#my_button_02', 'click', (_frame, evt) => {
+            _frame.closeFrame();
+            showToast(`${_frame.getName()} closed by clicking ${evt.target.id}`);
+          });
+
+          frame.on('#my_button_03', 'click', (_frame, evt) => {
+            showToast(`Clicked ${_frame.getName()}'s ${evt.target.id}`);
+          });
+        }
+      });
+      frame01.show();
+      //------------------------------
+      const frame02 = jsFrame.create({
+        title: 'Window2',
+        name: 'window02',
+        left: 320, top: 260, width: 720, height: 600,
+        //URL to display in iframe
+        url: '../mock_invoice.html',
+
+        // If you specify "urlLoaded",
+        // you can specify a callback when the iframe content is finished loading
+        urlLoaded: (frame) => {
+          // You can use the on method to register an event listener for an element in an iframe
+          frame.on('#my_button_01', 'click', (_frame, evt) => {
+            // In this case, frame and _frame refer to the same object.
+            showToast(`Clicked ${_frame.getName()}'s ${evt.target.id}`);
+          });
+
+          frame.on('#my_button_02', 'click', (_frame, evt) => {
+            _frame.closeFrame();
+            showToast(`${_frame.getName()} closed by clicking ${evt.target.id}`);
+          });
+
+          frame.on('#my_button_03', 'click', (_frame, evt) => {
+            showToast(`Clicked ${_frame.getName()}'s ${evt.target.id}`);
+          });
+        }
+      });
+      frame02.show();
+
+
+
+
+    }
+
+    start();
+</script>
+<!--
+<div style="color:white"><a href="https://github.com/riversun/JSFrame.js">JSFrame.js</a> Example : Preset style redstone
+</div>
+-->
+
+<div
+        style="font-size: 12px; color: white; position: fixed; right: 10px; bottom: 10px">
+</div>
+</body>
+</html>

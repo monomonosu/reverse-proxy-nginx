@@ -1,0 +1,74 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+        </style>
+        <div id="app" v-cloak>
+            <b-card class="fixed-top header" style="background: rgba(255,255,255,0.5);">
+                <b-row>
+                    <b-col></b-col>
+                    <b-col cols="11">
+                        <b-row>
+                            <b-col>
+                            </b-col>
+                            <b-col class="text-right">
+                                <b-button pill href="/setting-page">設定画面へ
+                                </b-button>
+                            </b-col>
+                            <!-- サイドバー -->
+                            <b-col cols="1" class="text-right">
+                                <sc-menu v-if="modeName!='mw'"></sc-menu>
+                            </b-col>
+                        </b-row>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <div>
+                <b-row class="mt-5">
+                    <b-col></b-col>
+                    <b-col cols=11>
+                        <b-card border-variant="white" class="mb-3 text-center" header="ページ選択"
+                            header-border-variant="light">
+                            <p>クレスコムサポート権限専用ページです</p>
+                            <p>参照したいページを選択してください。</p>
+                            <b-button class="mt-5" href="/csv-upload-page">CSVアップロード画面へ</b-button>
+                            <b-button class="mt-5" href="/csv-download-page">CSVダウンロード画面へ</b-button>
+                            <b-button class="mt-5" href="/db-init-page">データ全削除ページへ</b-button>
+                        </b-card>
+                    </b-col>
+                    <b-col></b-col>
+                </b-row>
+
+            </div>
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            });
+
+            var app = new Vue({
+                el: '#app',
+                methods: {
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = 'クレスコムサポート権限専用';
+                },
+                router,
+                computed: {
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+        </script>
+        <% endblock %>

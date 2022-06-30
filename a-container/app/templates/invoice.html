@@ -1,0 +1,1437 @@
+<% extends "head.html" %>
+    <% block content %>
+        <!-- print.js -->
+        <script src="../static/library/print.min.js"></script>
+        <link rel="stylesheet" href="../static/library/print.min.css" type="text/css" />
+
+        <!-- viewerとして使用-->
+        <script src="../static//library/tingle.min.js"></script>
+        <link rel="stylesheet" href="../static/library/tingle.css" type="text/css" />
+
+        <!-- コンポーネント -->
+        <script src="../static/component/list-invoice.js"></script>
+
+
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+
+            #invoicetable>thead>tr>th {
+                pointer-events: none;
+            }
+
+            .th-customer-any-number,
+            .th-apply-date {
+                pointer-events: auto !important;
+            }
+
+            #invoicetable td,
+            #invoice_items_table td {
+                vertical-align: middle;
+            }
+
+            .td-any {
+                width: 70px;
+            }
+
+            .td-count {
+                width: 75px;
+            }
+
+            .td-unit {
+                width: 90px;
+            }
+
+            .td-price {
+                max-width: 100px;
+            }
+
+            #detail-add-button,
+            #detail-del-button {
+                border-color: #e9ecf0;
+                background-color: #e9ecf0;
+                color: #686e72;
+            }
+
+            #detail-add-button:hover,
+            #detail-del-button:hover {
+                border-color: #686e72;
+                background-color: #686e72;
+                color: #e9ecf0;
+            }
+
+            #tdAmount {
+                background-color: #ccecf180;
+            }
+
+            #invoicesIndicateAmount>div {
+                padding: 0;
+            }
+
+            /* スピンボタン無効化 */
+            /* Chrome/Safari */
+            input[type="number"]::-webkit-outer-spin-button,
+            input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+            }
+
+            /* Firefox */
+            input[type="number"] {
+                -moz-appearance: textfield;
+            }
+
+            .box {
+                /* border: 1px solid #333333; */
+                /* width: 200px; */
+                height: 135px;
+                overflow-y: scroll;
+            }
+
+            .image-in-check {
+                width: 15px;
+                height: 15px;
+                color: #ffffff;
+                background-color: #2779bd;
+                display: flex;
+                /*justify-content: center;*/
+                /*align-items: center;*/
+                font-size: 1.5rem;
+                border-radius: 50%;
+                cursor: pointer;
+
+                position: absolute;
+                top: 5;
+                left: 5;
+                z-index: 0;
+            }
+
+            .file-card {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            #dropdown-dropup__BV_button_ {
+                border-radius: 20px 0 0 20px;
+            }
+
+            #dropdown-dropup__BV_toggle_ {
+                border-radius: 0 20px 20px 0;
+            }
+
+            #item-modal___BV_modal_body_ {
+                padding-top: 0;
+            }
+
+            #item-modal-card {
+                padding: 0.25rem 1.25rem;
+                border-bottom: 1px solid #CED4DA;
+            }
+
+            #payment-delete:hover {
+                border-color: #ed254e;
+                background-color: #ed254e;
+            }
+        </style>
+
+        <div id="app" v-cloak>
+            <!-- 一覧表示 -->
+            <div v-if="pageName=='index'">
+                <!-- 空行 -->
+                <b-row class="mb-3"></b-row>
+
+                <div>
+                    <b-row class="mt-1">
+                        <b-col></b-col>
+                        <b-col cols="11">
+                            <b-row>
+                                <b-col></b-col>
+                                <b-col class="text-right">
+                                    <sc-menu class="mb-3" v-if="modeName!='mw'"></sc-menu>
+                                </b-col>
+                            </b-row>
+                            <b-card border-variant="white" class="mb-3 text-center" :header="headerName"
+                                header-border-variant="light">
+                                <b-row>
+                                    <b-col sm>
+                                        <search :invoices="invoices" @emit-invoices="updateInvoices"></search>
+                                    </b-col>
+                                    <b-col sm>
+                                    </b-col>
+                                    <b-col sm>
+                                        <!-- <is-show v-if="procName=='normal'" @emit-show-all="updateIsInvoicesShowAll">
+                                        </is-show> -->
+                                        <day-search @emit-day-start="updateDayStart" @emit-day-end="updateDayEnd">
+                                        </day-search>
+                                    </b-col>
+                                </b-row>
+                                <indicate-count :indicate-count="invoicesIndicateCount"></indicate-count>
+                                <b-row align-h="start">
+                                    <router-link to="?page=store">
+                                        <b-button v-if="procName=='normal'" variant="primary" id="new-button"
+                                            class="mb-3 ml-3" @click="InvoiceAddRow();">
+                                            ＋新規追加
+                                        </b-button>
+                                    </router-link>
+                                </b-row>
+                                <!-- ヘッダーをクリックするとソートが解除されるバグ解消のために、ソート可能なth以外はクリック無効にしているので注意 -->
+                                <!-- 一覧 -->
+                                <invoice-list v-if="procName=='normal'" :select-invoice="selectInvoice"
+                                    :invoices-indicate-index="invoicesIndicateIndex" :counted-files="countedFiles"
+                                    :sort-by-invoices="sortByInvoices" :sort-desc="sortDesc">
+                                </invoice-list>
+                                <!-- 未入金 -->
+                                <invoice-list-payment v-else :select-invoice="selectInvoice"
+                                    :invoices-indicate-index="invoicesIndicateIndex" :counted-files="countedFiles"
+                                    :sort-by-invoices="sortByInvoices" :sort-desc="sortDesc">
+                                </invoice-list-payment>
+                                <b-row align-h="end">
+                                    <b-button v-if="isMore" variant="primary" size="sm" @click="showMore">さらに表示
+                                    </b-button>
+                                </b-row>
+                            </b-card>
+                        </b-col>
+                        <b-col></b-col>
+                    </b-row>
+                </div>
+            </div>
+
+            <!-- 新規作成・詳細(更新)ページ -->
+            <div v-if="pageName=='show' || pageName=='store'">
+                <b-row class="mt-2">
+                    <b-col></b-col>
+                    <!--- 本体 -->
+                    <b-col cols=11>
+                        <b-row>
+                            <b-col>
+                                <span class="mr-2">請求No:{{invoice.applyNumber}}</span>
+                            </b-col>
+                            <b-col class="text-right">
+                                <span class="mr-2">作成日:{{formatDate(invoice.createdAt)}}</span>
+                                <span class="mr-2">更新日:{{formatDate(invoice.updatedAt)}}</span>
+                            </b-col>
+                        </b-row>
+                        <b-card border-variant="white" class="text-center" header="請求書入力" header-border-variant="light">
+                            <b-row>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="得意先名(必須)"
+                                        label-for="customer" class="customer" label-align="right">
+                                        <b-container class="text-left" style="padding: 0;">
+                                            <b-button @click="$bvModal.show('customer-modal')" size="sm"
+                                                variant="primary" class="mr-3">検索</b-button>
+                                            {{invoice.customerName}}
+                                        </b-container>
+                                        <!-- 得意先一覧モーダル -->
+                                        <b-modal size="xl" id="customer-modal">
+                                            <p>得意先を選択してください</p>
+                                            <b-form-group label-cols="2" label-size="sm" label-align="center" label="検索"
+                                                label-for="searchCustomerWord">
+                                                <b-form-input v-model="searchCustomerWord" id="searchCustomerWord"
+                                                    size="sm">
+                                                </b-form-input>
+                                            </b-form-group>
+                                            <b-row align-h="end">
+                                                <b-form-checkbox class="mr-3" v-model="isShowFavorite">お気に入り
+                                                </b-form-checkbox>
+                                                <b-form-checkbox class="mr-3" v-model="isShowAll">全て表示
+                                                </b-form-checkbox>
+                                            </b-row>
+                                            <b-table hover striped small id="customer-table" :items="searchCustomers"
+                                                @row-clicked="customerSelect" label="Table Options"
+                                                :sort-by.sync="this.sortByCustomers" :fields="[
+                                                      {  key: 'anyNumber', label: 'No.' },
+                                                      {  key: 'customerName', label: '得意先名' },
+                                                ]">
+                                            </b-table>
+
+                                        </b-modal>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-row>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="敬称"
+                                                label-for="honorificTitle" label-align="right">
+                                                <b-form-input v-model="invoice.honorificTitle" id="honorificTitle"
+                                                    size="sm" autocomplete="off">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="日付"
+                                                label-for="applyDate" label-align="right">
+                                                <b-form-input v-model="invoice.applyDate" id="applyDate" size="sm"
+                                                    type="date">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="部署"
+                                        label-for="department" label-align="right">
+                                        <b-form-input v-model="invoice.department" id="department" size="sm"
+                                            autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-row>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="支払期限"
+                                                label-for="deadLine" label-align="right">
+                                                <b-form-input v-model="invoice.deadLine" id="deadLine" size="sm"
+                                                    type="date">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                        <b-col xl>
+                                            <b-form-group label-cols="2" label-cols-xl="4" label-size="sm" label="担当者"
+                                                label-for="manager" label-align="right">
+                                                <b-form-input v-model="invoice.manager" id="manager" size="sm"
+                                                    autocomplete="off">
+                                                </b-form-input>
+                                            </b-form-group>
+                                        </b-col>
+                                    </b-row>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="先方担当者"
+                                        label-for="otherPartyManager" label-align="right">
+                                        <b-form-input v-model="invoice.otherPartyManager" id="otherPartyManager"
+                                            size="sm" autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                    <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="件名"
+                                        label-for="title" label-align="right">
+                                        <b-form-input v-model="invoice.title" id="title" size="sm" autocomplete="off">
+                                        </b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col xl>
+                                    <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="メモ"
+                                        label-for="メモ" label-align="right">
+                                        <b-form-textarea v-model="invoice.memo" size="sm" rows="3">
+                                        </b-form-textarea>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-card>
+
+                        <!--  table list & edit -->
+                        <b-table hover caption-top small id="invoice_items_table" primary-key="id" small
+                            label="Table Options" :items=invoice.invoice_items :fields="[
+                          {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'rowNum', thClass: 'd-none', tdClass: 'd-none' },
+                          {  key: 'itemId', thClass: 'd-none', tdClass:'d-none' },
+                          {  key: 'any', label: '', tdClass:'td-any' },
+                          {  key: 'itemName', label: '内容' ,sortable: true},
+                          {  key: 'count',   label: '数量', tdClass:'td-count' },
+                          {  key: 'unit',   label: '単位', tdClass:'td-unit' },
+                          {  key: 'price', label: '単価', tdClass:'td-price' },
+                          {  key: 'amount', label: '金額' },
+                          {  key: 'detail', label: '詳細',class:'text-center' },
+                          {  key: 'addRow', label: '追加',class:'text-center' },
+                          {  key: 'delete', label: '削除',class:'text-center' },
+                        ]">
+
+                            <template v-slot:cell(any)="data">
+                                <b-form-input v-model="data.item.any" size="sm" autocomplete="off"></b-form-input>
+                            </template>
+                            <template v-slot:cell(itemName)="data">
+                                <textarea v-model="data.item.itemName" class="form-control form-control-sm itemNameArea"
+                                    rows="1" @dblclick="showModalItems(); selectInvoiceItem(data.item);"
+                                    v-on:keydown.enter="selectInvoiceItem(data.item);Vue.set(self.invoiceItem,'itemId',null);"
+                                    :style="heightItemName(data.item.itemName)">
+                                </textarea>
+
+                                <b-modal size="xl" ref="items-modal" ok-only ok-title="cancel" hide-header
+                                    id="item-modal">
+                                    <b-row>
+                                        <div id="item-modal-card" style="width: 100%;" class="mb-3">商品一覧</div>
+                                    </b-row>
+                                    <b-row>
+                                        <b-col>
+                                        </b-col>
+                                        <b-col>
+                                            <b-row class="mb-1">
+                                                <b-col cols="4">
+                                                </b-col>
+                                                <b-col cols="8">
+                                                    <b-form-input v-model="searchItemWord" id="searchItemWord" size="sm"
+                                                        placeholder="🔍">
+                                                    </b-form-input>
+                                                </b-col>
+                                            </b-row>
+                                            <b-row class="mb-1">
+                                                <b-col cols="4">
+                                                </b-col>
+                                                <b-col cols="8">
+                                                    <b-form-select v-model="searchItemSelectCategory"
+                                                        :options="categories" size="sm">
+                                                        <template #first>
+                                                            <b-form-select-option value='' disabled>カテゴリー
+                                                            </b-form-select-option>
+                                                        </template>
+                                                    </b-form-select>
+                                                </b-col>
+                                            </b-row>
+                                            <b-row class="mb-2">
+                                                <b-col cols="4">
+                                                </b-col>
+                                                <b-col cols="8">
+                                                    <b-form-select v-model="searchItemSelectMaker" :options="makers"
+                                                        size="sm">
+                                                        <template #first>
+                                                            <b-form-select-option value='' disabled>メーカー
+                                                            </b-form-select-option>
+                                                        </template>
+                                                    </b-form-select>
+                                                </b-col>
+                                            </b-row>
+                                        </b-col>
+                                    </b-row>
+                                    <b-table hover striped small sort-by="ID" id="items-table" :items="searchItems"
+                                        @row-clicked="itemSelect" label="Table Options" :fields="[
+                                  {  key: 'id', label: 'No.' },
+                                  {  key: 'itemName', label: '商品名' },
+                                  {  key: 'unit',   label: '単位' },
+                                  {  key: 'basePrice',  label: '単価' },
+                                  {  key: 'baseCost',  label: '原価' },
+                                  {  key: 'memo', label: 'メモ' },
+                                ]"></b-table>
+                                </b-modal>
+
+                            </template>
+                            <template v-slot:cell(count)="data">
+                                <b-form-input v-model="data.item.count" type="number" size="sm"
+                                    :formatter="formatter_count" autocomplete="off">
+                                </b-form-input>
+                            </template>
+                            <template v-slot:cell(unit)="data">
+                                <b-form-select v-model="data.item.unit" :options="units" size="sm" autocomplete="off">
+                                </b-form-select>
+                            </template>
+                            <template v-slot:cell(price)="data">
+                                <b-form-input v-model="data.item.price" type="number" size="sm" autocomplete="off">
+                                </b-form-input>
+                            </template>
+                            <template v-slot:cell(amount)="data">
+                                <div class="text-right">{{data.item.count*data.item.price|nf}}</div>
+                            </template>
+
+                            <template v-slot:cell(detail)="data">
+                                <b-form-checkbox @change="data.toggleDetails"></b-form-checkbox>
+                            </template>
+
+                            <template #row-details="data">
+                                <b-row>
+                                    <div style="width: 55px;"></div>
+                                    <b-col cols="3">
+                                        <b-form-group label-cols="4" label-cols-lg="4" label-size="sm" label="原価単価:"
+                                            label-for="cost" label-align="right">
+                                            <b-form-input v-model="data.item.cost" id="cost" size="sm" type="number">
+                                            </b-form-input>
+                                        </b-form-group>
+                                    </b-col>
+                                    <b-col>
+                                        <p class="mt-1">原価: {{costTotal(data)}}</p>
+                                    </b-col>
+                                    <b-col>
+                                        <p class="mt-1">原価率: {{costRate(data)}}</p>
+                                    </b-col>
+                                    <b-col>
+                                        <p class="mt-1">粗利金額: {{profit(data)}}</p>
+                                    </b-col>
+                                    <b-col cols="4">
+                                        <b-form-group label-cols="2" label-cols-lg="2" label-size="sm" label="備考:"
+                                            label-for="remarks" label-align="right">
+                                            <b-form-input v-model="data.item.remarks" id="remarks" size="sm">
+                                            </b-form-input>
+                                        </b-form-group>
+                                    </b-col>
+                                </b-row>
+                            </template>
+
+                            <template v-slot:cell(addRow)="data">
+                                <b-button size="sm" id="detail-add-button" @click="addRowInvoiceItem(data);">✚
+                                </b-button>
+                            </template>
+                            <template v-slot:cell(delete)="data">
+                                <b-button size="sm" id="detail-del-button" @click="removeRowInvoiceItem(data)">－
+                                </b-button>
+                            </template>
+
+                        </b-table>
+
+                        <!-- 商品項目を追加するプラスボタン -->
+                        <!-- <b-row class="d-flex justify-content-end" id="item_add">
+                            <b-col cols="16" md="auto">
+                                <b-button pill variant="primary" @click="addRowInvoiceItem();">✙</b-button>
+                            </b-col>
+                        </b-row> -->
+
+                        <div class="mt-5"></div>
+
+                        <b-row class="mb-3">
+                            <b-col cols="auto">
+                                <!-- 請求書発行前に請求書＿入金テーブルにINSERTするとFKが迷子になるので、発行前はDisable -->
+                                <b-button v-if="invoice.id" variant="primary"
+                                    @click="modalShow(invoice,'payment-modal');">入金処理</b-button>
+                                <b-button v-else variant="primary" disabled>入金処理</b-button>
+                            </b-col>
+                        </b-row>
+
+                        <b-row>
+                            <b-col md>
+                                <b-form-textarea v-model="invoice.remarks" id="remarks" size="sm" type="text" rows="6"
+                                    placeholder="備考欄">
+                                </b-form-textarea>
+                            </b-col>
+                            <b-col md>
+                                <b-container style="max-width: 500px; margin-right: 0;">
+                                    <b-table-simple borderless>
+                                        <b-tr>
+                                            <b-td class="text-right" style="width: 100px;">小計</b-td>
+                                            <b-td class="text-center" id="tdAmount"
+                                                style="border-bottom: 2px solid white;">
+                                                {{sum|nf}}
+                                            </b-td>
+                                            <b-td style="width: 100px;">
+                                                <b-form-checkbox v-model="invoice.isTaxExp" class="ml-3">外税
+                                                </b-form-checkbox>
+                                            </b-td>
+                                        </b-tr>
+                                        <b-tr>
+                                            <b-td class="text-right">消費税</b-td>
+                                            <b-td class="text-center" id="tdAmount"
+                                                style="border-bottom: 2px solid white;">
+                                                {{taxAmount|nf}}</b-td>
+                                            <b-td style="padding: 8px;">
+                                                <b-input-group append="%" size="sm">
+                                                    <b-form-input v-model="invoice.tax" id="tax" size="sm">
+                                                    </b-form-input>
+                                                </b-input-group>
+                                            </b-td>
+                                        </b-tr>
+                                        <b-tr>
+                                            <b-td class="text-right">請求総額</b-td>
+                                            <b-td class="text-center" id="tdAmount">{{priceIncludingTax|nf}}</b-td>
+                                        </b-tr>
+                                    </b-table-simple>
+                                </b-container>
+                            </b-col>
+                        </b-row>
+                        <!-- アップロード機能　-->
+                        <b-row>
+                            <b-col md="3">
+                                <form action="upload-files/s/upload/invoices" class="dropzone" id="dropz">
+                                    <input hidden type="text" name="fileId" v-model="invoice.applyNumber">
+
+                                    <input hidden type="file" name="file">
+                                </form>
+                            </b-col>
+                            <b-col>
+                                <div v-if="!dicFiles.length" class="mt-5">
+                                    ←クリックまたはドロップしてファイルをアップロード。
+                                </div>
+
+                                <template v-if="uploadListMode=='list'">
+
+                                    <b-table-simple hover small caption-top responsive class="box">
+                                        <template v-for="f in dicFiles">
+                                            <b-tr>
+                                                <b-td width="5%">
+                                                    <input type="checkbox" v-model="f.isSelect" size="sm">
+                                                </b-td>
+                                                <b-td width="15%">
+                                                    <div @click="selectImgUrl=f.url">
+                                                        <b-img :src="f.urlThumb" width="90" fluid></b-img>
+                                                    </div>
+                                                </b-td>
+                                                <b-td class="ml-5">{{f.filename}}</b-td>
+                                            </b-tr>
+                                        </template>
+                                    </b-table-simple>
+                                </template>
+                                <template v-if="uploadListMode=='card'">
+                                    <div class="file-card ">
+                                        <template v-for="f in dicFiles">
+                                            <b-card border-variant="light">
+                                                <b-img :src="'../'+f.thumbPath" @click="openViewer(f)" width="90" fluid>
+                                                </b-img>
+                                                <input type="checkbox" v-model="f.isSelect" class="image-in-check">
+                                            </b-card>
+                                        </template>
+                                    </div>
+                                </template>
+                            </b-col>
+                            <b-col md="1">
+                                <b-button @click="deleteFiles(invoice.applyNumber)" class="mr-2 mb-3" variant="danger">
+                                    <i class="fas fa-trash-alt"></i>
+                                </b-button>
+                                <b-button v-if="uploadListMode=='list'" @click="uploadListMode='card'" class="mr-2">
+                                    <b-icon icon="app"></b-icon>
+                                </b-button>
+                                <b-button v-if="uploadListMode=='card'" @click="uploadListMode='list'" class="mr-2">
+                                    <b-icon icon="list-task"></b-icon>
+                                </b-button>
+                            </b-col>
+                        </b-row>
+                        <!--アップロード機能ここまで-->
+                    </b-col> <!-- 本体 -->
+                    <b-col></b-col>
+                </b-row>
+
+
+            </div>
+
+            <!-- 空行 -->
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+            <b-row class="mb-5"></b-row>
+
+            <!-- 表示中請求書の合計金額 -->
+            <b-card v-if="pageName=='index'" class="fixed-bottom footer" id="invoicesIndicateAmount">
+                <b-row>
+                    <b-col cols="8"></b-col>
+                    <b-col sm class="text-right">
+                        <b-form-group label-cols="4" label-size="sm" label="合計：" label-for="invoicesIndicateAmount">
+                            {{invoicesIndicateAmount|nf}}
+                        </b-form-group>
+                    </b-col>
+                    <b-col cols="1"></b-col>
+                </b-row>
+            </b-card>
+            <!-- 更新・取消ボタンのフッター -->
+            <b-card v-if="pageName=='show' || pageName=='store'" text-variant="white" class="fixed-bottom footer"
+                style="background: rgba(52,58,64,0.9);">
+                <b-row>
+                    <b-col>
+                        <b-button @click="checkChange" v-b-tooltip.hover.top="'戻る'">＜</b-button>
+                    </b-col>
+                    <b-col class="text-right" md="auto" cols="auto">
+                        <b-button pill variant="primary" @click="bulkUpsert(invoice);">保存
+                        </b-button>
+                        <b-button v-if="pageName==='show'" pill size="lg" id="copy-button"
+                            @click="modalShow(invoice,'copyModal');" v-b-tooltip.hover.top="'複製'"><i
+                                class="fa-solid fa-copy"></i></b-button>
+                        <b-button v-if="pageName==='show'" pill size="lg" id="convert-button"
+                            @click="modalShow(invoice,'convertModal');" v-b-tooltip.hover.top="'見積書に変換'"><i
+                                class="fa-solid fa-shuffle"></i></b-button>
+                        <btn-pdf-invoice :func="pdfout"></btn-pdf-invoice>
+                        <b-button pill size="lg" variant="danger" @click="modalShow(invoice,'deleteModal');"
+                            v-b-tooltip.hover.top="'削除'">
+                            <i class="fas fa-trash-alt"></i>
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-card>
+
+            <!-- 確認モーダル -->
+            <confirm-modal :title="title" :message="message"></confirm-modal>
+
+            <!-- エラーモーダル -->
+            <confirm-modal-danger :title="title" :message="message"></confirm-modal-danger>
+
+            <!-- コピーモーダル -->
+            <div>
+                <select-modal modal-name='copyModal' modal-message='複製しますか？' @selected="copyModalProcess($event);" />
+            </div>
+            <!-- 変換モーダル -->
+            <div>
+                <select-modal modal-name='convertModal' modal-message='見積書に変換しますか？'
+                    @selected="convertModalProcess($event);" />
+            </div>
+            <!-- 削除モーダル -->
+            <div>
+                <select-modal modal-name='deleteModal' modal-message='削除しますか？'
+                    @selected="deleteModalProcess($event);" />
+            </div>
+
+            <!-- 入金モーダル -->
+            <div>
+                <b-modal size="xl" id="payment-modal" :title="'請求書No. ' + invoice.applyNumber">
+                    <b-table hover striped small sort-by="ID" id="payment-table" :items="invoice.invoice_payments"
+                        label="Table Options" :fields="[
+                              {  key: 'id', thClass: 'd-none', tdClass: 'd-none' },
+                              {  key: 'paymentDate', label: '入金日' },
+                              {  key: 'paymentMethod', label: '支払い方法' },
+                              {  key: 'paymentAmount', label: '入金金額' },
+                              {  key: 'remarks', label: '備考' },
+                              {  key: 'delete', thClass: 'd-none' },
+                        ]">
+                        <template v-slot:cell(paymentDate)="data">
+                            <b-form-input v-model="data.item.paymentDate" type="date" size="sm" autocomplete="off">
+                            </b-form-input>
+                        </template>
+                        <template v-slot:cell(paymentMethod)="data">
+                            <b-form-select v-model="data.item.paymentMethod" :options="['口座振込','現金','クレジット']" size="sm"
+                                autocomplete="off">
+                            </b-form-select>
+                        </template>
+                        <template v-slot:cell(paymentAmount)="data">
+                            <b-form-input v-model="data.item.paymentAmount" type="number" size="sm" autocomplete="off">
+                            </b-form-input>
+                        </template>
+                        <template v-slot:cell(remarks)="data">
+                            <b-form-input v-model="data.item.remarks" size="sm" autocomplete="off">
+                            </b-form-input>
+                        </template>
+                        <template v-slot:cell(delete)="data">
+                            <b-button pill id="payment-delete" size="sm" @click="deleteRowInvoicePayment(data.index)"
+                                style="font-size: 12px;">－
+                            </b-button>
+                        </template>
+                    </b-table>
+                    <b-row class="d-flex justify-content-end mb-3" id="item_add">
+                        <b-col cols="16" md="auto">
+                            <b-button pill variant="primary" @click="addRowInvoicePayment();">✙</b-button>
+                        </b-col>
+                    </b-row>
+                    <b-row class="d-flex justify-content-end" style="border-top: 1px solid #DEE2E6;">
+                        <b-col cols="1"></b-col>
+                        <b-col md="auto">
+                            <p></p>
+                            <p>入金合計額：{{paymentSum|nf}}</p>
+                        </b-col>
+                        <b-col md="auto">
+                            <p></p>
+                            <p>請求残金：{{balance|nf}}</p>
+                        </b-col>
+                        <b-col cols="1"></b-col>
+                    </b-row>
+                    <template #modal-footer>
+                        <button v-b-modal.modal-close_visit class="btn btn-secondary m-1"
+                            @click="$bvModal.hide('payment-modal')">Cancel</button>
+                        <button v-b-modal.modal-close_visit class="btn btn-primary m-1"
+                            @click="upsertInvoicePayments(invoice)">Save</button>
+                    </template>
+                </b-modal>
+            </div>
+        </div>
+
+        <script>
+            //カスタマイズと通常読み込みとが必要なものを指定する
+            loadScript(['def-pdf.js', 'btn-pdf.js']);
+
+            Vue.filter('nf', function (val) {
+                if (isNaN(val)) return null
+                return val.toLocaleString();
+            });
+
+            const router = new VueRouter({
+                routes: [
+                ]
+            })
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    sortByInvoices: 'id',
+                    sortByCustomers: 'anyNumber',
+                    sortDesc: true,
+                    searchInvoiceWord: "",
+                    searchDayStart: '',             //請求書検索
+                    searchDayEnd: '',               //請求書検索
+                    isInvoicesShowAll: false,               //請求書検索
+                    invoicesIndicateCount: 0,       //請求書検索
+                    invoicesIndicateAmount: 0,      //一覧表示中請求書の合計金額
+                    searchItemWord: '',             //商品選択モーダル検索
+                    searchItemSelectCategory: '',   //商品選択モーダル検索
+                    searchItemSelectMaker: '',      //商品選択モーダル検索
+                    searchCustomerWord: '',         //得意先選択モーダル検索
+                    invoices: [],               //全件invoice
+                    invoice: [],                //選択中のinvoice
+                    oldInvoice: [],             //選択中の退避invoice
+                    invoiceItem: [],            //選択中のinvoiceItem
+                    customers: [],
+                    customer: [],
+                    items: [],
+                    units: [],
+                    categories: [],
+                    makers: [],
+                    setting: [],
+                    isShowAll: false,        // trueの時、customer.isHide=falseのもののみindexに表示
+                    isShowFavorite: false,
+                    isMore: false,
+                    fileId: '', //upload用ID
+                    dicFiles: [],
+                    form: {
+                        file: '',
+                        fileId: ''
+                    },
+                    uploadListMode: 'card', //list,card
+                    title: '',      //モーダルタイトル
+                    message: '',    //モーダルメッセージ
+                    offset: 0,
+                    routeTo: '',
+                    routeFrom: '',
+                    countedFiles: {},
+                },
+                methods: {
+                    // ---Invoices---
+                    getInvoices: async function (searchWord = '', offset = 0) {
+                        self = this;
+                        url = '/v1/invoices'
+                        await axios.get(url, {
+                            params: {
+                                search: searchWord,
+                                offset: offset,
+                                moreCheck: true,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                if (offset == 0) {
+                                    self.offset = 0;
+                                    self.invoices = response.data.invoices;
+                                    self.isMore = response.data.isMore;
+                                }
+                                else {
+                                    response.data.invoices.map(invoice => self.invoices.push(invoice));
+                                    self.isMore = response.data.isMore;
+                                }
+                            });
+                    },
+                    bulkUpsert: async function (item) {
+                        if (!item.customerId) {
+                            this.title = 'エラー';
+                            this.message = '得意先を選択してください。';
+                            this.$bvModal.show('confirmModalDanger');
+                            return
+                        }
+                        if (!item.id) {
+                            await this.insertInvoice(item);
+                            this.$bvModal.show('confirmModal');
+                        }
+                        else {
+                            await this.updateInvoice(item);
+                            this.$bvModal.show('confirmModal');
+                            item.invoice_items.sort(function (a, b) {
+                                return (a.rowNum < b.rowNum) ? -1 : 1;
+                            });
+                            console.log(item.invoice_items);
+                        }
+                    },
+                    insertInvoice: async function (item) {
+                        self = this;
+                        await axios.post("/v1/invoice", item)
+                            .then(function (response) {
+                                console.log(response);
+                                Vue.set(self.invoice, 'id', response.data.id)
+                                self.invoice.isInsert = false;
+                            });
+                        await self.getInvoice(self.invoice);
+                        localStorage.setItem('invoice', JSON.stringify(self.invoice));
+                        app.title = '新規作成';
+                        app.message = '保存しました。';
+                        self.oldInvoice = { ...self.invoice };
+                    },
+                    updateInvoice: async function (item) {
+                        self = this;
+                        await axios.put("/v1/invoice/" + item.id, item)
+                            .then(function (response) {
+                                console.log(response);
+                            });
+                        await self.getInvoice(self.invoice);
+                        self.invoice.invoice_items.sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                        localStorage.setItem('invoice', JSON.stringify(self.invoice));
+                        app.title = '更新';
+                        app.message = '保存しました。';
+                        self.oldInvoice = { ...self.invoice };
+                    },
+                    upsertInvoicePayments: async function (item) {
+                        self = this;
+                        await axios.put("/invoice_payment/" + item.id, item, {
+                            params: {
+                                priceIncludingTax: this.priceIncludingTax,
+                                paymentSum: this.paymentSum,
+                            }
+                        })
+                            .then(function (response) {
+                                console.log(response);
+                                app.title = "保存";
+                                app.message = "保存しました。";
+                                if (app.invoice.isPaid == false && app.paymentSum > app.priceIncludingTax) {
+                                    app.title = "保存（警告）";
+                                    app.message = "保存しました。（過入金です）";
+                                }
+                                app.$bvModal.show('confirmModal');
+                            });
+                        await self.getInvoice(self.invoice);
+                        localStorage.setItem('invoice', JSON.stringify(self.invoice));
+                    },
+                    copyInvoice: async function (item) {
+                        let invoiceResource = JSON.stringify(item);
+                        invoiceResource = JSON.parse(invoiceResource);  //参照渡し対策
+                        invoiceResource.numberOfAttachments = 0;
+                        delete invoiceResource.id;
+                        await this.insertInvoice(invoiceResource);
+                        this.getInvoices();
+                    },
+                    convertInvoice: function (item) {
+                        let quotationResource = JSON.stringify(item);
+                        quotationResource = JSON.parse(quotationResource);  //参照渡し対策
+                        // quotationResource.expiry = '';
+                        // quotationResource.dayOfDelivery = '';
+                        // quotationResource.termOfSale = '';
+                        // quotationResource.isConvert = false;
+                        quotationResource.numberOfAttachments = 0;
+                        quotationResource.quotation_items = item.invoice_items;
+                        delete quotationResource.id;
+                        delete quotationResource.deadLine;
+                        delete quotationResource.paymentDate;
+                        delete quotationResource.isPaid;
+                        delete quotationResource.invoice_items;
+                        this.insertQuotation(quotationResource);
+                    },
+                    // axios.deleteは使わず、isDeleteをTrueに
+                    deleteInvoice: async function (item) {
+                        self = this;
+                        await axios.put("/v1/invoice_delete/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                self.invoice = '';
+                                self.getInvoices(self.searchInvoiceWord);
+                            });
+                    },
+                    InvoiceAddRow: function () {
+                        self = this;
+                        self.invoices.push({
+                            isInsert: true,
+                            invoice_items: [{ isDelete: false }, { isDelete: false }, { isDelete: false }, { isDelete: false }, { isDelete: false }],
+                        });
+                        self.invoice = self.invoices.slice(-1)[0];
+                        Vue.set(self.invoice, 'isTaxExp', true);
+                        Vue.set(self.invoice, 'tax', self.setting.defaultTax);
+                        localStorage.setItem('invoice', JSON.stringify(self.invoice));
+                        this.clearFileList();
+                    },
+                    selectInvoice: function (item) {
+                        this.invoice = item;
+                        this.invoice.invoice_items = this.invoice.invoice_items.map(invoiceItem => ({ ...invoiceItem, isDelete: false }));
+                        this.oldInvoice = { ...item };
+                        this.getCustomer(this.invoice);  //PDF遅延のためにここでasyncなしで読んでおく
+                        console.log(this.invoice);
+                        this.invoice.invoice_items.sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                        localStorage.setItem('invoice', JSON.stringify(this.invoice));
+                        this.getFileListDZ();
+                    },
+                    selectInvoiceItem: function (item) {
+                        this.invoiceItem = item;
+                        console.log(this.invoiceItem);
+                    },
+                    getInvoice: async function (item) {
+                        self = this;
+                        await axios.get("/v1/invoice/" + item.id)
+                            .then(function (response) {
+                                console.log(response);
+                                for (const [key, value] of Object.entries(response.data)) {
+                                    console.log(key, value);
+                                    self.$set(self.invoice, key, value);
+                                }
+                            });
+                    },
+                    addRowInvoiceItem: function (data) {
+                        if (this.invoice.length === 0) {
+                            alert('請求書を選択してください');
+                            return;
+                        }
+                        this.invoice.invoice_items.splice(data.index + 1, 0, { invoiceId: this.invoice.id, })
+                        this.invoice.invoice_items.map((item, index) => {
+                            item.rowNum = index;
+                        }).sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                    },
+                    removeRowInvoiceItem: function (data) {
+                        if (this.invoice.length === 0) {
+                            alert('請求書を選択してください');
+                            return;
+                        }
+                        let index = this.invoice.invoice_items.findIndex((item) => item.rowNum === data.item.rowNum);
+                        this.invoice.invoice_items.splice(index, 1)
+                        this.invoice.invoice_items.map((item, index) => {
+                            item.rowNum = index;
+                        }).sort(function (a, b) {
+                            return (a.rowNum < b.rowNum) ? -1 : 1;
+                        });
+                    },
+                    addRowInvoicePayment: function () {
+                        if (this.invoice.length === 0) {
+                            alert('請求書を選択してください');
+                            return;
+                        }
+                        this.invoice.invoice_payments.push({
+                            invoiceId: this.invoice.id,
+                        })
+                    },
+                    deleteRowInvoicePayment: function (index) {
+                        this.invoice.invoice_payments.splice(index, 1);
+                    },
+                    insertQuotation: async function (item) {
+                        self = this;
+                        await axios.post("/quotation", item)
+                            .then(function (response) {
+                                console.log(response);
+                            });
+                    },
+                    getCustomers: async function () {
+                        self = this;
+                        await axios.get("/customers")
+                            .then(function (response) {
+                                console.log(response);
+                                self.customers = response.data;
+                            });
+                    },
+                    getCustomer: async function (item) {
+                        self = this;
+                        await axios.get("/customer/" + item.customerId)
+                            .then(function (response) {
+                                self.customer = response.data;
+                            });
+                    },
+                    getItems: async function () {
+                        self = this;
+                        await axios.get("/items")
+                            .then(function (response) {
+                                console.log(response);
+                                self.items = response.data;
+                            });
+                    },
+                    getUnits: async function () {
+                        self = this;
+                        await axios.get("/units")
+                            .then(function (response) {
+                                console.log(response);
+                                self.units = response.data.map(item => item['unitName']);
+                                self.units.unshift('');
+                            });
+                    },
+                    getCategories: async function () {
+                        self = this;
+                        await axios.get("/categories")
+                            .then(function (response) {
+                                console.log(response);
+                                self.categories = response.data.map(item => item['categoryName']);
+                                self.categories.unshift('')
+                            });
+                    },
+                    getMakers: async function () {
+                        self = this;
+                        await axios.get("/makers")
+                            .then(function (response) {
+                                console.log(response);
+                                self.makers = response.data.map(item => item['makerName']);
+                                self.makers.unshift('')
+                            });
+                    },
+                    getSetting: async function () {
+                        self = this;
+                        await axios.get("/setting")
+                            .then(function (response) {
+                                console.log(response);
+                                self.setting = response.data;
+                            });
+                    },
+                    showMore: function () {
+                        // テスト的に300に
+                        this.offset += 300;
+                        this.getInvoices(this.searchInvoiceWord, this.offset);
+                    },
+                    coutFiles: function () {
+                        self = this;
+                        axios.get("/count-files/s/upload/invoices")
+                            .then(function (response) {
+                                console.log(response);
+                                self.countedFiles = response.data;
+                            });
+                    },
+                    modalShow: function (item, modalName) {
+                        this.invoice = item;
+                        console.log(this.invoice);
+                        this.$bvModal.show(modalName);
+                    },
+                    deleteModalProcess(result) {
+                        this.$bvModal.hide('deleteModal');
+                        if (result === true) {
+                            this.deleteInvoice(this.invoice);
+                        }
+                    },
+                    copyModalProcess(result) {
+                        this.$bvModal.hide('copyModal');
+                        if (result === true) {
+                            this.copyInvoice(this.invoice);
+                        }
+                    },
+                    convertModalProcess(result) {
+                        this.$bvModal.hide('convertModal');
+                        if (result === true) {
+                            this.convertInvoice(this.invoice);
+                        }
+                    },
+                    // 得意先名モーダル選択時
+                    customerSelect(record) {
+                        Vue.set(self.invoice, 'customerId', record.id);
+                        Vue.set(self.invoice, 'customerName', record.customerName);
+                        Vue.set(self.invoice, 'honorificTitle', record.honorificTitle);
+                        this.invoice.customerAnyNumber = record.anyNumber;
+                        this.$bvModal.hide("customer-modal");
+                    },
+                    // 商品名モーダル選択時
+                    itemSelect(record) {
+                        Vue.set(self.invoiceItem, 'itemId', record.id);
+                        Vue.set(self.invoiceItem, 'itemName', record.itemName);
+                        Vue.set(self.invoiceItem, 'unit', record.unit);
+                        Vue.set(self.invoiceItem, 'price', record.basePrice);
+                        Vue.set(self.invoiceItem, 'cost', record.baseCost);
+                        this.$refs['items-modal'].hide()
+                    },
+                    // 商品名モーダル表示 モーダルのダブり表示防止
+                    showModalItems() {
+                        this.$refs['items-modal'].show()
+                    },
+                    pdfout: async function (mode, docClass = 'origin') {
+                        self = this;
+                        //await this.getCustomer(this.invoice)
+                        const sumInvoice = {
+                            sum: this.sum,
+                            taxAmount: this.taxAmount,
+                            priceIncludingTax: this.priceIncludingTax
+                        }
+                        const pdfData = getPdfDataInvoice(mode, this.invoice, this.setting, sumInvoice, this.customer, docClass);
+                        await axios.post("/pdfmaker", pdfData)
+                            .then(function (response) {
+                                self.printPdf('/pdf/' + response.data);
+                            });
+                    },
+                    printPdf(url) {
+                        if (checkUserAgent() == 'pc') {
+                            printJS(url)
+                        } else {
+                            content = "<div class='iframe-wrapper' ><iframe src=" + url + " frameborder='0'></iframe></div>"
+                            this.modal.setContent(content);
+                            this.modal.open();
+                        }
+                    },
+                    formatDate(date) {
+                        if (!!date) return moment(date).format("YYYY/MM/DD");
+                    },
+                    //商品個数小数点以下切り捨て
+                    formatter_count(value) {
+                        return Math.floor(value);
+                    },
+                    //明細欄　原価
+                    costTotal: function (data) {
+                        return data.item.cost * data.item.count;
+                    },
+                    //明細欄　原価率
+                    costRate: function (data) {
+                        return data.item.cost / data.item.price;
+                    },
+                    //明細欄　粗利金額
+                    profit: function (data) {
+                        return (data.item.price * data.item.count) - (data.item.cost * data.item.count);
+                    },
+                    //---- upload funcrions --
+                    getFileListDZ() {
+                        //this.invoice.numberOfAttachments = await this.getFileList(this.invoice.applyNumber);
+                        this.getFileList(this.invoice.applyNumber);
+                    },
+                    getFileList: async function (fid) {
+                        self = this;
+                        url = "list-files/s/upload/invoices/" + fid;
+                        flen = 0;
+                        await axios.get(url)
+                            .then(function (response) {
+                                console.log(response.data);
+                                self.dicFiles = response.data;
+                                self.countedFiles[fid] = self.dicFiles.length;
+                            })
+                        //return flen;
+                    },
+                    clearFileList: function () {
+                        this.dicFiles = {};
+                    },
+                    deleteFiles: async function (fid) {
+                        self = this;
+                        url = "delete-files/s";
+                        await axios.delete(url, {
+                            data: self.dicFiles
+                        }
+                        ).then(function (response) {
+                            console.log(response.data);
+                            //self.getFileList(fid);
+                            self.getFileListDZ();
+
+                        });
+                    }, //-- end upload functions
+                    isDiffObject: function () {
+                        if (this.oldInvoice.length == 0 || this.invoice.length == 0) return false;
+                        if (JSON.stringify(this.oldInvoice) === JSON.stringify(this.invoice)) return false;
+                        else return true;
+                    },
+                    checkChange: async function () {
+                        isUpdate = false;
+                        if (this.isDiffObject()) {
+                            await this.$bvModal.msgBoxConfirm('未更新のデータがあります。', {
+                                okVariant: 'primary',
+                                okTitle: '保存して戻る',
+                                cancelVariant: 'danger',
+                                cancelTitle: '保存しないで戻る',
+                                noCloseOnBackdrop: true
+
+                            }).then(value => {
+                                if (value) isUpdate = true;
+                            });
+                            if (isUpdate) await this.bulkUpsert(this.invoice);
+                            this.getInvoices(this.searchInvoiceWord);
+                        }
+                        if (!isUpdate || (isUpdate && this.invoice.customerId)) {
+                            this.clearFileList();
+                            router.push({ path: "?page=index" });
+                        }
+                    },
+                    openViewer: function (f) {
+                        //this.modal.setFooterContent(f.filename);
+                        content = ''
+                        if (f.type == 'pdf') {
+                            content = "<div class='iframe-wrapper' ><iframe src=" + f.url + " frameborder='0'></iframe></div>"
+                        } else if (f.type == 'csv') {
+                            content = "このファイルはViwerでは開けません";
+                        } else {
+                            content = "<img src=" + f.url + " width='100%'>"
+                        }
+                        this.modal.setContent(content);
+                        this.modal.open();
+                    },
+                    heightItemName: function (data) {
+                        if (!data) return "height: 31px";
+                        row = data.indexOf('\n') != -1 ? 2 : 1;
+                        interval = row > 1 ? 0 : 5;
+                        return "height: " + (26 * row + interval) + "px";
+                    },
+                    // ----- 子コンポーネントからの値 -----
+                    updateInvoices(invoices, searchInvoiceWord, isMore) {
+                        this.invoices = invoices;
+                        this.searchInvoiceWord = searchInvoiceWord;
+                        this.isMore = isMore;
+                    },
+                    updateDayStart(start) {
+                        this.searchDayStart = start;
+                    },
+                    updateDayEnd(end) {
+                        this.searchDayEnd = end;
+                    },
+                },
+                mounted: function () {
+                    if (localStorage.getItem('invoice'))
+                        this.invoice = JSON.parse(localStorage.getItem('invoice'));
+                    this.getInvoices();
+                    this.getCustomers();
+                    this.getItems();
+                    this.getUnits();
+                    this.getCategories();
+                    this.getMakers();
+                    this.getSetting();
+                    this.coutFiles();
+                    document.querySelector('title').textContent = '請求書管理';
+                    if (this.pageName == 'show') {
+                        //this.getFileList(self.invoice.applyNumber);
+                        this.getFileListDZ();
+                    }
+                    if (this.procName == 'normal') {
+                        this.isInvoicesShowAll = true;
+                    }
+                    this.modal = new tingle.modal({
+                        footer: false,
+                        stickyFooter: false,
+                        closeMethods: ['overlay', 'button', 'escape'],
+                        closeLabel: "Close",
+                    });
+                    this.invoice.invoice_items.sort(function (a, b) {
+                        return (a.rowNum < b.rowNum) ? -1 : 1;
+                    });
+                },
+                updated: function () {
+                    self = this;
+                    if ((this.routeFrom == 'index' || this.routeFrom == undefined) && (this.routeTo == 'show' || this.routeTo == 'store')) {
+                        this.routeFrom = 'show';
+                        this.routeTo = 'show';
+                        initDropzone();
+                    }
+                    if (this.pageName == 'show' && this.routeFrom == '' && this.routeTo == '') {
+                        this.routeFrom = 'show';
+                        this.routeTo = 'show';
+                        initDropzone();
+                    }
+                },
+                router,
+                computed: {
+                    pageName() {
+                        if (this.$route.query.page == undefined) return 'index';
+                        return this.$route.query.page;
+                    },
+                    headerName() {
+                        if (this.procName == "normal") return "請求書一覧";
+                        else return "未入金一覧";
+                    },
+                    procName() {
+                        let url = new URL(window.location.href);
+                        let params = url.searchParams.get('proc');
+                        if (params == undefined) return 'normal';
+                        return params;
+                    },
+                    modeName() {
+                        return localStorage.getItem('wMode');
+                    },
+                    // 逐次、数量＊単価の合計をする
+                    sum: function () {
+                        if (typeof (this.invoice.invoice_items) == 'undefined') { return 0 } //初期立ち上がりでのエラー抑制
+                        let subTotal = this.invoice.invoice_items.map(invoice_item => parseInt(invoice_item.count * Math.round(invoice_item.price))).reduce(function (a, b) { return a + (isNaN(b) ? 0 : b) }, 0);
+                        if (this.invoice.isTaxExp) return subTotal;
+                        return parseInt(subTotal / (1 + this.invoice.tax / 100));
+                    },
+                    // 入金合計額
+                    paymentSum: function () {
+                        if (typeof (this.invoice.invoice_payments) == 'undefined') { return 0 }
+                        return this.invoice.invoice_payments.map(invoice_payment => parseInt(invoice_payment.paymentAmount)).reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
+                    },
+                    // 請求残高 
+                    balance: function () {
+                        let balance = this.priceIncludingTax - this.paymentSum
+                        if (balance < 0) return 0;
+                        return balance;
+                    },
+                    //消費税総額
+                    taxAmount: function () {
+                        if (typeof (this.invoice.invoice_items) == 'undefined') { return 0 } //初期立ち上がりでのエラー抑制
+                        if (this.invoice.isTaxExp)
+                            return Math.round(this.sum * (this.invoice.tax / 100));
+                        let subTotal = this.invoice.invoice_items.map(invoice_item => parseInt(invoice_item.count * Math.round(invoice_item.price))).reduce(function (a, b) { return a + (isNaN(b) ? 0 : b) }, 0);
+                        return subTotal - this.sum;
+                    },
+                    //税込み総額
+                    priceIncludingTax: function () {
+                        if (typeof (this.invoice.invoice_items) == 'undefined') { return 0 } //初期立ち上がりでのエラー抑制
+                        if (this.invoice.isTaxExp)
+                            return Math.round(this.sum * (1 + this.invoice.tax / 100));
+                        return this.invoice.invoice_items.map(invoice_item => parseInt(invoice_item.count * Math.round(invoice_item.price))).reduce(function (a, b) { return a + (isNaN(b) ? 0 : b) }, 0);
+                        // return this.sum;
+                    },
+                    invoicesIndicateIndex: function () {
+                        let invoices = this.invoices;
+                        let amount = 0;
+                        if (this.isInvoicesShowAll === false)
+                            invoices = invoices.filter(invoice => invoice.isPaid === false);
+                        if (this.searchDayStart != '' && this.searchDayEnd == '') {
+                            invoices = invoices.filter(invoice => invoice.applyDate >= this.searchDayStart);
+                        }
+                        if (this.searchDayStart == '' && this.searchDayEnd != '') {
+                            invoices = invoices.filter(invoice => invoice.applyDate <= this.searchDayEnd);
+                        }
+                        if (this.searchDayStart != '' && this.searchDayEnd != '') {
+                            invoices = invoices.filter(invoice => invoice.applyDate >= this.searchDayStart && invoice.applyDate <= this.searchDayEnd);
+                        }
+                        let invoiceAmounts = invoices.map(
+                            invoice => invoice.invoice_items.map(
+                                item => Math.round(item.count * Math.round(item.price) * (invoice.isTaxExp == true ? (1 + invoice.tax / 100) : 1))).reduce((a, b) => a + b));
+                        invoiceAmounts.forEach(value => {
+                            amount += value;
+                        });
+                        this.invoicesIndicateCount = invoices.length;
+                        this.invoicesIndicateAmount = amount;
+                        return invoices;
+                    },
+                    // 得意先選択モーダルの検索機能
+                    searchCustomers: function () {
+                        let customers = this.customers;
+                        if (this.isShowAll === false)
+                            customers = customers.filter(customer => customer.isHide === false);
+                        if (this.isShowFavorite === true)
+                            customers = customers.filter(customer => customer.isFavorite === true);
+                        customers = customers.filter(customer => (customer.customerName?.includes(this.searchCustomerWord) || String(customer.id)?.includes(this.searchCustomerWord) ||
+                            String(customer.customerKana)?.includes(this.searchCustomerWord)));
+                        return customers;
+                    },
+                    // 商品選択モーダルの検索機能
+                    searchItems: function () {
+                        return this.items.filter(item => {
+                            return (searchFilter(item.itemName, this.searchItemWord) ||
+                                searchFilter(item.itemCode, this.searchItemWord) ||
+                                searchFilter(item.model, this.searchItemWord)) &&
+                                searchFilter(item.category, this.searchItemSelectCategory) &&
+                                searchFilter(item.maker, this.searchItemSelectMaker);
+                        });
+                    },
+                },
+                watch: {
+                    $route(to, from) { // パラメータの変更でドロップゾーンを初期化するため
+                        this.routeFrom = from.query.page;
+                        this.routeTo = to.query.page;
+                    }
+                },
+            })
+
+            function searchFilter(searchTarget, searchWord) {
+                if ((searchTarget === null && searchWord === '') || (searchTarget !== null && searchWord === '')) {
+                    return true;
+                }
+                if (searchTarget === null && searchWord !== '') {
+                    return false;
+                }
+                return searchTarget.includes(searchWord);
+            };
+
+            // アップロード機能　    
+            Dropzone.autoDiscover = false;
+            function destroyDrop() {
+                if (Dropzone.instances.length > 0) {
+                    Dropzone.instances.forEach((e) => {
+                        e.destroy();
+                    });
+                }
+            }
+            function initDropzone() {
+                Dropzone.autoDiscover = false;
+                console.log("init dropzone");
+                destroyDrop();
+                dropz = new Dropzone("form#dropz", {
+                    dictDefaultMessage: '+',
+                    parallelUploads: 2,
+                    init: function () {
+                        this.on("complete", file => {
+                            console.log("complete A file has been added");
+                            this.removeFile(file);
+                            if (this.getUploadingFiles().length === 0 && this.getQueuedFiles().length === 0) {
+                                app.getFileListDZ();
+                            }
+                        });
+                    }
+                });
+            }
+            // end アップロード機能
+
+            // ユーザエージェントモードチェック（PCかスマホか）
+            function checkUserAgent() {
+                var ua = navigator.userAgent;
+                if (ua.indexOf('iPhone') > 0 || ua.indexOf('iPod') > 0 || ua.indexOf('Android') > 0 && ua.indexOf('Mobile') > 0) {
+                    return 'sm';
+                } else if (ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0) {
+                    return 'tb';
+                } else {
+                    return 'pc';
+                }
+            }
+        </script>
+        <% endblock %>

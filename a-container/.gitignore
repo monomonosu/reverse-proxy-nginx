@@ -1,0 +1,14 @@
+__pycache__
+/migrations
+*.db
+*.db-journal
+app/seeder_init.py
+app/static/upload/
+app/pdfmaker/app/static/pdf/
+app/upload/static/upload/
+app/static/asset/logo/*
+!logo.png
+!NotImage.png
+app/static/asset/stamp/*
+!NotImage.png
+app/static/component/customize/

@@ -1,0 +1,65 @@
+<% extends "head.html" %>
+    <% block content %>
+        <style>
+            .card-header {
+                background-color: #ccecf1;
+                font-size: 18px;
+            }
+        </style>
+        <div id="app" v-cloak>
+            <!-- 空行 -->
+            <b-row class="mb-3"></b-row>
+
+            <!-- <div> -->
+            <b-row>
+                <b-col></b-col>
+                <b-col cols=10>
+                    <b-row>
+                        <b-col></b-col>
+                        <b-col class="text-right">
+                            <sc-menu class="mb-3" v-if="modeName!='mw'"></sc-menu>
+                        </b-col>
+                    </b-row>
+                    <b-container class="bv-example-row">
+                        <b-row cols="1" cols-sm="2" cols-md="3" cols-lg="4">
+                            <b-col>
+                                <b-button variant="primary" href="/invoice-page?proc=payment" size="lg" class="mt-3"
+                                    block>未入金チェック</b-button>
+                            </b-col>
+                            <b-col>
+                                <b-button variant="primary" href="" size="lg" class="mt-3" block>未請求チェック</b-button>
+                            </b-col>
+                            <b-col>
+                                <b-button variant="primary" href="/achievement-page" size="lg" class="mt-3" block>売上実績
+                                </b-button>
+                            </b-col>
+                        </b-row>
+                    </b-container>
+                </b-col>
+                <b-col></b-col>
+            </b-row>
+
+            <!-- </div> -->
+        </div>
+
+        <script>
+            const router = new VueRouter({
+            });
+
+            var app = new Vue({
+                el: '#app',
+                methods: {
+                },
+                mounted: function () {
+                    document.querySelector('title').textContent = 'チェック';
+                },
+                router,
+                computed: {
+                    modeName() {
+                        //return this.$route.query.mode;
+                        return localStorage.getItem('wMode');
+                    },
+                }
+            })
+        </script>
+        <% endblock %>

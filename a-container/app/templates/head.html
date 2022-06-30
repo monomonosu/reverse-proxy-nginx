@@ -1,0 +1,236 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="../static/images/favicon.ico" rel="shortcut icon">
+
+    <title>SohoCaddie</title>
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+    <link type="text/css" rel="stylesheet" href="../static/library/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="../static/library/bootstrap-vue.min.css" />
+
+    <!-- Load fontawesome -->
+    <link type="text/css" rel="stylesheet" href="../static/library/fontawesome/css/all.min.css">
+
+    <!-- Load polyfills to support older browsers -->
+    <script src="../static//library/polyfill.min.js" crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="../static/library/vue.min.js"></script>
+    <script src="../static/library/bootstrap-vue.min.js"></script>
+
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="../static/library/bootstrap-vue-icons.min.js"></script>
+
+    <!-- axios -->
+    <script src="../static/library/axios.min.js"></script>
+
+    <!-- popper DevVer-->
+    <script src="../static/library/popper.min.js"></script>
+
+    <!-- VueRouter -->
+    <script src="../static/library/vue-router.js"></script>
+
+    <!-- 日付フォーマット -->
+    <script src="../static/library/moment.js"></script>
+    <script src="../static/library/ja.min.js"></script>
+
+    <!-- Dropzone.js -->
+    <script src="../static/library/dropzone.min.js"></script>
+    <link rel="stylesheet" href="../static/library/dropzone.min.css" type="text/css" />
+
+    <!-- jquery -->
+    <script src="../static/library/jquery-3.6.0.min.js"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script> -->
+
+    <!-- soho caddie component-->
+    <script src="static/component/sc-menu.js"></script>
+    <script src="static/component/select-modal.js"></script>
+    <script src="static/component/confirm-modal.js"></script>
+    <script src="static/component/menu-header.js"></script>
+    <script>
+        //カスタマイズファイルの動的読み込み
+        //なければ通常のコンポーネントを読む関数
+        //本体プログラムで必要なコンポーネントを指定する
+        function loadScript(files) {
+            for (file of files) {
+                var script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = "static/component/customize/" + file; //カスタマイズ領域
+                const xhr = new XMLHttpRequest();
+                xhr.open("HEAD", script.src, false);
+                xhr.send(null);
+                if (xhr.status == 200) {
+                    document.body.appendChild(script);
+                } else {
+                    script.src = "static/component/" + file;
+                    document.body.appendChild(script);
+                }
+            }
+        }
+    </script>
+
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        /* -----ボタンの配色変更----- */
+        .btn-primary {
+            border-color: #10afc5;
+            background-color: #10afc5;
+        }
+
+        .btn-primary:hover {
+            border-color: #009fb5;
+            background-color: #009fb5;
+        }
+
+        .btn-outline-primary {
+            color: #10afc5;
+            border-color: #10afc5;
+        }
+
+        #new-button {
+            background-color: #ffffff;
+            color: #10afc5;
+        }
+
+        #new-button:hover {
+            border-color: #009fb5;
+            background-color: #009fb5;
+            color: #ffffff;
+        }
+
+        .btn-outline-primary:hover {
+            border-color: #009fb5;
+            background-color: #009fb5;
+        }
+
+        .btn-danger {
+            border-color: #ed254e;
+            background-color: #ed254e;
+        }
+
+        .btn-danger:hover {
+            border-color: #cd153e;
+            background-color: #cd153e;
+        }
+
+        .btn-warning {
+            border-color: #FDD121;
+            background-color: #FDD121;
+        }
+
+        .btn-warning:hover {
+            border-color: #EDC111;
+            background-color: #EDC111;
+        }
+
+        .btn-secondary {
+            border-color: #5f5f5f;
+            background-color: #5f5f5f;
+        }
+
+        .btn-secondary:hover {
+            border-color: #4f4f4f;
+            background-color: #4f4f4f;
+        }
+
+        /* dropzone CSS */
+        .dropzone {
+            border-radius: 4px;
+            /* border: 2px dashed #353738 !important; */
+            width: 140px;
+            height: 100px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .dropzone .dz-message .dz-button {
+            color: darkgray;
+            font-size: 100;
+            margin-top: -67px;
+        }
+
+        /* tingle で使用するCSS */
+        .tingle-modal {
+            background: rgba(0, 0, 0, .5) !important;
+            ;
+        }
+
+        .tingle-modal-box__content {
+            padding: 0 !important;
+        }
+
+        .iframe-wrapper {
+            position: relative;
+            padding-bottom: 150%;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .iframe-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <% block content %>
+        <!--- contents here -->
+        <% endblock %>
+
+            <script>
+                function polling_session() {
+                    if (localStorage.getItem('wMode') !== 'tb') return
+                    url = "/is-session"
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("GET", url, false);
+                    xhr.send(null);
+                    if (xhr.status == 200) {
+                        response = JSON.parse(xhr.responseText);
+                        console.log("tb session:", response.session)
+                        if (!response.session) {
+                            if (location.pathname !== '/login')
+                                window.location.href = '/login';
+                        }
+                    } else {
+                        console.log("any error");
+                    }
+
+                }
+                setInterval(polling_session, 30000)
+
+                // 画面クリック毎にセッションのライフタイム回復
+                $(function () {
+                    document.body.onclick = function (event) {
+                        url = "/on-click"
+                        const xhr = new XMLHttpRequest();
+                        xhr.open("GET", url, false);
+                        xhr.send(null);
+                        if (xhr.status == 200) {
+                            response = JSON.parse(xhr.responseText);
+                            console.log("response:", response)
+                        } else {
+                            console.log("any error");
+                        }
+                    }
+                });
+            </script>
+
+</body>
+
+</html>

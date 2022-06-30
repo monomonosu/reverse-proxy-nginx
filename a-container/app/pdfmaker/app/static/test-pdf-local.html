@@ -1,0 +1,120 @@
+<html>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="images/favicon.ico" rel="shortcut icon">
+
+<title>pdf maker</title>
+<!-- Load required Bootstrap and BootstrapVue CSS -->
+
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.css" />
+
+<!-- Load fontawesome -->
+<!-- link href="./css/all.css" rel="stylesheet" -->
+<!--load all styles -->
+<!-- <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"> -->
+<link href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" rel="stylesheet">
+
+<!-- Load polyfills to support older browsers -->
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+  crossorigin="anonymous"></script>
+
+<!-- Load Vue followed by BootstrapVue -->
+<script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+<script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue.min.js"></script>
+
+<!-- Load the following for BootstrapVueIcons support -->
+<script src="https://unpkg.com/bootstrap-vue@2.21.1/dist/bootstrap-vue-icons.min.js"></script>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+  integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+
+<!-- 各種便利なツール塁です必要なときに随時使用のこと
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.css">
+<script src="https://cdn.jsdelivr.net/npm/vue-image-lightbox@6.4.0/dist/vue-image-lightbox.min.js"></script>
+<script src="https://unpkg.com/vue-lazyload/vue-lazyload.js"></script>
+<script src="./jsQR.js"></script>
+<script src="https://cozmo.github.io/jsQR/jsQR.js"></script>
+-->
+
+
+<style>
+  .bg {
+    background-color:#e9ecef;
+  }
+
+  [v-cloak] {
+    display: none;
+  }
+</style>
+
+<!--   mock up here -->
+<div id="app">
+  <b-container class="pt-2">
+    <!-- b-row class="justify-content-center" -->
+    <b-card nobody title="PDF表示テスト(JSONファイルからPDFを作成)" style="max-width: 100rem;" class="bg-transparent border-0">
+      <b-form-file v-model="upfile" class="mt-3" plain ></b-form-file>
+      <b-row class="mt-3">
+        <b-col>
+          <div id="editor" style="min-height: 400px" class="mb-3"></div>
+          <b-button variant="primary" class="text-center" @click="goPdf" >Go PDF</b-button>
+        </b-col>
+
+      </b-row>
+    </b-card>
+  </b-container>
+
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.0/ace.js"></script>
+<script>
+  var app = new Vue({
+    el: '#app',
+    data: {
+      //jsonPdf: [],
+      upfile: ""
+    },
+    methods: {
+      goPdf: async function () {
+        //let url = "http://pdfs.hksagri.diskstation.me";
+        let url = "http://localhost:5020/pdfmaker";
+        let jsonData = editor.getSession().getValue()
+        jsonObj = JSON.parse(jsonData)
+        await axios.post(url, jsonObj)
+        .then(function (response) {
+            console.log(response);
+            window.open('http://localhost:5020/pdf/'+response.data,"_blank")
+        });
+      }
+    },
+    watch:{
+      upfile: function(newVal,oldVal){
+        self = this;
+        let reader = new FileReader()
+        reader.readAsText(this.upfile,'UTF-8')
+        reader.onload = ()=>{
+          self.jsonPdf = reader.result
+          editor.getSession().setValue(reader.result)
+        }
+        
+      }
+    }
+
+  })
+  var editor = ace.edit("editor");
+  editor.$blockScrolling = Infinity;
+  editor.setTheme("ace/theme/monokai");
+  editor.setFontSize(14);
+  editor.getSession().setMode("ace/mode/json");
+  editor.getSession().setUseWrapMode(true);
+  editor.getSession().setTabSize(2);
+  
+</script>
+
+</html>
